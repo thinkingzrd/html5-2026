@@ -60,6 +60,7 @@ async function copyMessage(): Promise<void> {
   <div
     class="row"
     :class="isUser ? 'from-user' : 'from-assistant'"
+    :style="{ '--accent': persona.accent }"
     @touchstart.passive="onPressStart"
     @touchend="clearPress"
     @touchmove="clearPress"
@@ -83,7 +84,10 @@ async function copyMessage(): Promise<void> {
         <div v-if="message.references?.length && message.content" class="references" @mousedown.stop @touchstart.stop>
           <p class="references-label">本轮参考资料 · 点击编号查看原文</p>
           <details v-for="(source, index) in message.references" :key="index">
-            <summary>[{{ index + 1 }}] {{ source.title || '未命名资料' }}</summary>
+            <summary>
+              <span class="ref-no">{{ index + 1 }}</span
+              ><span class="ref-title">{{ source.title || '未命名资料' }}</span>
+            </summary>
             <p class="source-note">回答时保存的原文片段；资料删除后仍可核对。</p>
             <p class="source-content">{{ source.content }}</p>
           </details>
@@ -94,7 +98,9 @@ async function copyMessage(): Promise<void> {
           <i class="dot" />
         </span>
         <span v-else-if="live" class="caret" aria-hidden="true" />
-        <p v-else-if="message.status === 'incomplete'" class="incomplete-note">{{ message.content ? '回复未完成' : '未生成回复' }}</p>
+        <p v-else-if="message.status === 'incomplete'" class="incomplete-note">
+          {{ message.content ? '回复未完成' : '未生成回复' }}
+        </p>
       </template>
     </div>
   </div>
@@ -102,34 +108,77 @@ async function copyMessage(): Promise<void> {
 
 <style scoped>
 .incomplete-note {
-  margin: 6px 0 0;
-  color: var(--text-2);
+  display: inline-block;
+  margin: 8px 0 0;
+  padding: 2px 9px;
+  border-radius: var(--r-full);
+  color: var(--warning);
+  background: var(--warning-soft);
   font-size: var(--fs-xs);
 }
 .references {
   margin-top: 12px;
-  border-top: 1px solid var(--border);
-  padding-top: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-strong);
 }
 .references-label,
 .source-note {
-  color: var(--text-2);
+  color: var(--text-3);
   font-size: var(--fs-xs);
-  margin: 6px 0;
+  margin: 0 0 6px;
+}
+.references details {
+  margin-top: 6px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.references details[open] {
+  padding-bottom: 8px;
 }
 .references summary {
-  color: var(--brand);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  list-style: none;
+  color: var(--text-1);
+  font-size: var(--fs-sm);
   cursor: pointer;
-  padding: 8px 0;
+}
+.references summary::-webkit-details-marker {
+  display: none;
+}
+.ref-no {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+.ref-title {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
+.references .source-note,
 .source-content {
+  margin-inline: 10px;
+}
+.source-content {
+  margin-top: 0;
+  margin-bottom: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   max-height: 260px;
   overflow-y: auto;
   line-height: 1.7;
   font-size: var(--fs-sm);
+  color: var(--text-2);
 }
 .row {
   display: flex;
@@ -143,35 +192,43 @@ async function copyMessage(): Promise<void> {
   justify-content: flex-end;
 }
 
+/* 角色主色混入主题文字色：五套主题下都看得清 */
 .avatar {
   flex: none;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--r-sm);
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--brand);
-  background: var(--brand-soft);
-  border: 1px solid var(--border);
   margin-top: 2px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: Georgia, 'Songti SC', serif;
+  color: color-mix(in srgb, var(--accent) 62%, var(--text-1));
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
 }
 
 .bubble {
   max-width: 82%;
-  padding: 10px 14px;
-  border-radius: var(--r-md);
+  padding: 11px 15px;
+  border-radius: 20px;
   background: var(--surface-1);
   border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
   animation: bubble-in var(--dur) var(--ease);
 }
 
 .from-user .bubble {
-  background: var(--brand-soft);
-  border-color: color-mix(in srgb, var(--brand) 20%, var(--border));
-  color: var(--text-1);
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  border-color: transparent;
   border-bottom-right-radius: 6px;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+.from-user .plain::selection {
+  background: color-mix(in srgb, var(--brand-on) 28%, transparent);
 }
 
 .from-assistant .bubble {
@@ -181,7 +238,7 @@ async function copyMessage(): Promise<void> {
 @keyframes bubble-in {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.985);
+    transform: translateY(8px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -219,14 +276,14 @@ async function copyMessage(): Promise<void> {
 .thinking {
   display: inline-flex;
   gap: 5px;
-  padding: 3px 0;
+  padding: 5px 2px;
 }
 
 .dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: var(--r-full);
-  background: var(--text-3);
+  background: var(--brand);
   animation: bounce 1.3s var(--ease) infinite;
 }
 
@@ -243,7 +300,7 @@ async function copyMessage(): Promise<void> {
   60%,
   100% {
     transform: translateY(0);
-    opacity: 0.45;
+    opacity: 0.35;
   }
   30% {
     transform: translateY(-4px);

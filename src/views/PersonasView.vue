@@ -149,7 +149,7 @@ function goBack(): void {
   <div class="page scroll-y">
     <header class="head safe-x">
       <button v-if="switchMode" class="back" aria-label="返回" @click="goBack">
-        <AppIcon name="close" />
+        <AppIcon name="back" />
       </button>
       <div class="head-text">
         <h1 class="title">{{ switchMode ? '换一位角色' : '找人聊' }}</h1>
@@ -159,12 +159,14 @@ function goBack(): void {
       </div>
     </header>
 
-    <div class="search safe-x">
-      <span class="search-icon"><AppIcon name="search" /></span>
-      <input v-model="query" class="search-input" type="search" placeholder="搜角色或用途，例如：健身、合同、面试" />
-      <button v-if="searching" class="search-clear" aria-label="清空搜索" @click="query = ''">
-        <AppIcon name="close" />
-      </button>
+    <div class="search-wrap safe-x">
+      <div class="search">
+        <AppIcon name="search" class="search-icon" />
+        <input v-model="query" class="search-input" type="search" placeholder="搜角色或用途，例如：健身、合同、面试" />
+        <button v-if="searching" class="search-clear" aria-label="清空搜索" @click="query = ''">
+          <AppIcon name="close" />
+        </button>
+      </div>
     </div>
 
     <div class="chips safe-x">
@@ -184,8 +186,13 @@ function goBack(): void {
     <p v-if="personas.storageWarning" class="warn safe-x">{{ personas.storageWarning }}</p>
 
     <div v-if="activeCat === 'all' && !searching" class="tools safe-x">
-      <span class="tools-total">共 {{ personas.all.length }} 位</span>
-      <button class="tools-btn" @click="toggleAll">{{ allOpen ? '收起全部' : '展开全部' }}</button>
+      <span class="tools-total"
+        >共 <strong>{{ personas.all.length }}</strong> 位</span
+      >
+      <button class="tools-btn" @click="toggleAll">
+        {{ allOpen ? '收起全部' : '展开全部' }}
+        <AppIcon name="chevron" :class="{ flipped: allOpen }" />
+      </button>
     </div>
 
     <p v-if="searching && totalMatched === 0" class="empty safe-x">
@@ -208,7 +215,7 @@ function goBack(): void {
           <div class="acc-content">
             <template v-if="entry.group.id === 'custom'">
               <button class="new-card" @click="createNew">
-                <span class="new-plus" aria-hidden="true">＋</span>
+                <span class="new-plus" aria-hidden="true"><AppIcon name="plus" /></span>
                 <span class="new-text">
                   <span class="new-title">新建角色</span>
                   <span class="new-desc">给它一个身份、语气和禁忌</span>
@@ -253,8 +260,11 @@ function goBack(): void {
     </section>
 
     <p class="footnote safe-x">
-      先贤被限定了「知识边界」——问到超出他时代的事物，他会坦承"此物吾所未闻"，再用自己的思想体系去理解。
-      其余角色都活在当代，可以正常聊当下的事。
+      <AppIcon name="sparkle" class="footnote-icon" />
+      <span>
+        先贤被限定了「知识边界」——问到超出他时代的事物，他会坦承"此物吾所未闻"，再用自己的思想体系去理解。
+        其余角色都活在当代，可以正常聊当下的事。
+      </span>
     </p>
 
     <div class="tail" />
@@ -265,81 +275,61 @@ function goBack(): void {
 .page {
   height: 100%;
   padding-top: var(--safe-top);
-  background: var(--bg);
 }
 
 .head {
-  display: flex;
   align-items: flex-start;
-  gap: var(--sp-3);
-  padding: var(--sp-5) var(--sp-5) var(--sp-4);
-}
-
-.back {
-  flex: none;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-full);
-  font-size: 1.125rem;
-  color: var(--text-2);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-}
-
-.back:active {
-  background: var(--surface-2);
 }
 
 .head-text {
   min-width: 0;
 }
 
-.title {
-  margin: 0;
-  font-size: var(--fs-xl);
-  font-weight: 700;
-}
-
-.subtitle {
-  margin: 6px 0 0;
-  font-size: var(--fs-sm);
-  color: var(--text-2);
+/* ---- 搜索框：图标、输入、清空按钮装在同一个圆角框里 ---- */
+.search-wrap {
+  margin: 0 max(20px, var(--safe-right)) var(--sp-3) max(20px, var(--safe-left));
+  padding: 0;
 }
 
 .search {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin-bottom: var(--sp-3);
+  min-height: 46px;
+  padding: 0 6px 0 14px;
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.search:focus-within {
+  border-color: var(--brand);
+  box-shadow: var(--focus-ring);
 }
 
 .search-icon {
   flex: none;
-  font-size: 1rem;
+  font-size: 1.05rem;
   color: var(--text-3);
 }
 
 .search-input {
   flex: 1;
   min-width: 0;
-  padding: 10px 12px;
-  border-radius: var(--r-sm);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
+  padding: 11px 0;
+  border: none;
+  background: transparent;
   font-size: var(--fs-sm);
   font-family: inherit;
   color: var(--text-1);
   outline: none;
-  transition: border-color var(--dur) var(--ease);
   /* 去掉 Safari 给 type=search 的默认圆角与清除按钮，否则和自绘的清除按钮并排很怪 */
   -webkit-appearance: none;
   appearance: none;
-}
-
-.search-input:focus {
-  border-color: var(--brand);
 }
 
 .search-input::-webkit-search-cancel-button {
@@ -355,19 +345,18 @@ function goBack(): void {
   border-radius: var(--r-full);
   font-size: 0.875rem;
   color: var(--text-2);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
+  background: var(--surface-2);
 }
 
 .search-clear:active {
-  background: var(--surface-2);
+  background: var(--surface-3);
 }
 
 /* 分组筛选：横向滚动。合并成 7 组后基本能一屏放下 */
 .chips {
   display: flex;
   gap: var(--sp-2);
-  padding: 0 var(--sp-5) var(--sp-3);
+  padding: 2px max(20px, var(--safe-right)) var(--sp-3) max(20px, var(--safe-left));
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -388,12 +377,17 @@ function goBack(): void {
   background: var(--surface-1);
   border: 1px solid var(--border);
   white-space: nowrap;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
 }
 
 .chip.on {
-  color: var(--brand);
-  background: var(--brand-soft);
-  border-color: var(--brand);
+  color: var(--brand-on);
+  font-weight: 700;
+  background: var(--grad-brand);
+  border-color: transparent;
+  box-shadow: var(--shadow-brand);
 }
 
 .chip-emoji {
@@ -401,13 +395,18 @@ function goBack(): void {
 }
 
 .chip-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--r-full);
+  text-align: center;
   font-size: 0.625rem;
-  opacity: 0.7;
+  font-weight: 700;
+  background: color-mix(in srgb, currentColor 14%, transparent);
 }
 
 .warn {
   margin: 0 0 var(--sp-3);
-  padding: 0 var(--sp-5);
+  padding: 0 max(20px, var(--safe-left));
   font-size: var(--fs-xs);
   line-height: 1.65;
   color: var(--warning);
@@ -417,7 +416,7 @@ function goBack(): void {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--sp-5) var(--sp-3);
+  padding: 0 max(20px, var(--safe-right)) var(--sp-3) max(20px, var(--safe-left));
 }
 
 .tools-total {
@@ -425,16 +424,32 @@ function goBack(): void {
   color: var(--text-3);
 }
 
+.tools-total strong {
+  color: var(--text-1);
+}
+
 .tools-btn {
-  font-size: var(--fs-xs);
-  color: var(--brand);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   padding: 4px 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.tools-btn .icon {
+  transition: transform var(--dur) var(--ease);
+}
+
+.tools-btn .flipped {
+  transform: rotate(180deg);
 }
 
 /* ---------- 折叠分组 ---------- */
 .acc {
-  padding: 0 var(--sp-5);
-  margin-bottom: var(--sp-2);
+  padding: 0 max(20px, var(--safe-right)) 0 max(20px, var(--safe-left));
+  margin-bottom: 10px;
 }
 
 .acc-head {
@@ -442,11 +457,13 @@ function goBack(): void {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
-  border-radius: var(--r-md);
+  padding: 11px 14px 11px 11px;
+  border-radius: var(--r-lg);
   text-align: left;
   background: var(--surface-1);
   border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  transition: background var(--dur-fast) var(--ease);
 }
 
 .acc-head:active {
@@ -454,9 +471,16 @@ function goBack(): void {
 }
 
 .acc-emoji {
+  display: grid;
+  place-items: center;
   flex: none;
-  font-size: 1.25rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  font-size: 1.3rem;
   line-height: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
 }
 
 .acc-text {
@@ -469,7 +493,7 @@ function goBack(): void {
 
 .acc-title {
   font-size: var(--fs-sm);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .acc-hint {
@@ -479,8 +503,14 @@ function goBack(): void {
 
 .acc-count {
   flex: none;
+  min-width: 26px;
+  padding: 1px 8px;
+  border-radius: var(--r-full);
+  text-align: center;
   font-size: var(--fs-xs);
-  color: var(--text-3);
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--brand-soft);
 }
 
 .acc-chevron {
@@ -522,13 +552,13 @@ function goBack(): void {
 }
 
 .acc-content {
-  padding-top: var(--sp-3);
+  padding: 10px 0 4px;
 }
 
 .grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--sp-2);
+  gap: 8px;
 }
 
 /* 「我的角色」：新建入口 */
@@ -537,23 +567,29 @@ function goBack(): void {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  margin-bottom: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-2);
+  padding: 12px 14px;
   border-radius: var(--r-md);
   text-align: left;
-  background: var(--surface-1);
-  border: 1px dashed var(--border);
+  background: color-mix(in srgb, var(--brand) 6%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--brand) 45%, var(--border));
 }
 
 .new-card:active {
-  background: var(--surface-2);
+  background: var(--brand-soft);
 }
 
 .new-plus {
+  display: grid;
+  place-items: center;
   flex: none;
-  font-size: 1.25rem;
-  line-height: 1;
-  color: var(--brand);
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  font-size: 1.2rem;
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
 }
 
 .new-text {
@@ -565,7 +601,7 @@ function goBack(): void {
 
 .new-title {
   font-size: var(--fs-sm);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .new-desc {
@@ -582,6 +618,7 @@ function goBack(): void {
   border-radius: var(--r-md);
   background: var(--surface-1);
   border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
 }
 
@@ -591,7 +628,7 @@ function goBack(): void {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
+  padding: 12px 12px 12px 14px;
   text-align: left;
 }
 
@@ -601,15 +638,17 @@ function goBack(): void {
 
 .mine-avatar {
   flex: none;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  border-radius: var(--r-sm);
-  color: var(--brand);
-  background: var(--brand-soft);
+  font-family: Georgia, 'Songti SC', serif;
+  border-radius: 13px;
+  color: color-mix(in srgb, var(--accent) 62%, var(--text-1));
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
 }
 
 .mine-body {
@@ -624,7 +663,7 @@ function goBack(): void {
   align-items: center;
   gap: 6px;
   font-size: var(--fs-sm);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .mine-tagline {
@@ -638,17 +677,18 @@ function goBack(): void {
 .temp-tag {
   flex: none;
   font-size: 0.625rem;
-  font-weight: 400;
-  padding: 2px 6px;
+  font-weight: 600;
+  padding: 2px 7px;
   border-radius: var(--r-full);
-  color: var(--accent);
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  color: color-mix(in srgb, var(--accent) 62%, var(--text-1));
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .mine-action {
   flex: none;
   padding: 0 var(--sp-4);
   font-size: var(--fs-xs);
+  font-weight: 700;
   color: var(--brand);
   border-left: 1px solid var(--border);
 }
@@ -663,17 +703,33 @@ function goBack(): void {
   border-radius: var(--r-md);
   font-size: var(--fs-xs);
   line-height: 1.7;
-  color: var(--text-3);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
+  color: var(--text-2);
+  background: color-mix(in srgb, var(--surface-1) 70%, transparent);
+  border: 1px dashed var(--border-strong);
+}
+
+p.empty.safe-x {
+  margin: 0 max(20px, var(--safe-left)) var(--sp-3);
 }
 
 .footnote {
-  margin: var(--sp-5) 0 0;
-  padding: 0 var(--sp-5);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: var(--sp-5) max(20px, var(--safe-left)) 0;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
   font-size: var(--fs-xs);
   line-height: 1.75;
-  color: var(--text-3);
+  color: var(--text-2);
+  background: color-mix(in srgb, var(--surface-1) 70%, transparent);
+  border: 1px solid var(--border);
+}
+
+.footnote-icon {
+  flex: none;
+  margin-top: 3px;
+  color: var(--brand);
 }
 
 .tail {

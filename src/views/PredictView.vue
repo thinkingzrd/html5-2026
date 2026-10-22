@@ -448,17 +448,17 @@ onMounted(redraw)
 <template>
   <div class="page scroll-y">
     <header class="head safe-x">
-      <div>
+      <div class="head-copy">
         <p class="eyebrow">FIND THE NEXT TREND</p>
         <h1 class="title">看见数据的下一步</h1>
         <p class="subtitle">导入连续历史，观察未来 {{ config.horizon || '若干' }} {{ timeUnit }}</p>
       </div>
-      <span class="local"><AppIcon name="check" /> 本地计算</span>
+      <span class="local"><AppIcon name="shield" /> 本地计算</span>
     </header>
 
     <section class="section safe-x">
       <div class="section-heading">
-        <div>
+        <div class="heading-main">
           <span class="step">01</span>
           <h2 class="section-title">选择演示场景</h2>
         </div>
@@ -470,13 +470,19 @@ onMounted(redraw)
           :key="scene.id"
           class="scene-card"
           :class="{ active: activeScene === scene.id }"
+          :aria-pressed="activeScene === scene.id"
           @click="loadScene(scene)"
         >
-          <span class="scene-icon">{{ scene.emoji }}</span>
-          <strong>{{ scene.title }}</strong>
-          <small>{{ scene.caption }}</small>
-          <small class="scene-source">{{ scene.source }}</small>
-          <span class="scene-action">{{ activeScene === scene.id ? '已选择' : '载入数据' }} →</span>
+          <span class="scene-icon" aria-hidden="true">{{ scene.emoji }}</span>
+          <span class="scene-copy">
+            <strong>{{ scene.title }}</strong>
+            <small>{{ scene.caption }}</small>
+            <small class="scene-source">{{ scene.source }}</small>
+          </span>
+          <span class="scene-action">
+            <template v-if="activeScene === scene.id"><AppIcon name="check" />已选择</template>
+            <template v-else>载入</template>
+          </span>
         </button>
       </div>
     </section>
@@ -484,8 +490,14 @@ onMounted(redraw)
     <section class="section safe-x">
       <details class="import-panel">
         <summary>
-          <span><AppIcon name="database" /> 导入自己的数据</span>
-          <small>支持 CSV 或手动输入</small>
+          <span class="import-title">
+            <span class="import-icon"><AppIcon name="database" /></span>
+            <span>
+              <strong>导入自己的数据</strong>
+              <small>支持 CSV 或手动输入</small>
+            </span>
+          </span>
+          <AppIcon name="chevron" class="fold-chevron" />
         </summary>
         <div class="import-content">
           <textarea
@@ -547,36 +559,46 @@ onMounted(redraw)
     </section>
 
     <section class="section safe-x">
-      <div class="series-meta">
-        <label
-          ><span>采样周期</span
-          ><select v-model="samplingPeriod" aria-label="采样周期">
-            <option v-for="(label, key) in SAMPLING_PERIODS" :key="key" :value="key">{{ label }}</option>
-          </select></label
-        >
-        <label
-          ><span>数值单位</span
-          ><input v-model="valueUnit" maxlength="12" aria-label="数值单位" placeholder="如 元、次、°C"
-        /></label>
+      <div class="series-card">
+        <div class="series-meta">
+          <label
+            ><span>采样周期</span
+            ><select v-model="samplingPeriod" aria-label="采样周期">
+              <option v-for="(label, key) in SAMPLING_PERIODS" :key="key" :value="key">{{ label }}</option>
+            </select></label
+          >
+          <label
+            ><span>数值单位</span
+            ><input v-model="valueUnit" maxlength="12" aria-label="数值单位" placeholder="如 元、次、°C"
+          /></label>
+        </div>
+        <p class="hint">数据需按时间先后、等间隔排列。周期未知时按序号预测；周期与日期不会从文件自动推断。</p>
       </div>
-      <p class="hint">数据需按时间先后、等间隔排列。周期未知时按序号预测；周期与日期不会从文件自动推断。</p>
       <div v-if="input.trim()" class="data-check" :class="{ invalid: !validation.canRun }" aria-live="polite">
-        <strong>{{ validation.canRun ? `数据检查：${points.length} 个有效点` : '请先修正数据' }}</strong>
+        <strong
+          ><AppIcon :name="validation.canRun ? 'check' : 'alert'" />{{
+            validation.canRun ? `数据检查：${points.length} 个有效点` : '请先修正数据'
+          }}</strong
+        >
         <p v-for="message in validation.errors" :key="message" class="check-error">{{ message }}</p>
         <p v-for="message in validation.warnings" :key="message">{{ message }}</p>
       </div>
+    </section>
+
+    <section class="section safe-x">
       <div class="section-heading">
-        <div>
+        <div class="heading-main">
           <span class="step">02</span>
           <h2 class="section-title">预测灵敏度</h2>
         </div>
         <span class="section-note">默认推荐标准</span>
       </div>
-      <div class="sensitivity">
+      <div class="sensitivity" role="group" aria-label="预测灵敏度">
         <button
           v-for="(preset, key) in sensitivityPresets"
           :key="key"
           :class="{ active: sensitivity === key }"
+          :aria-pressed="sensitivity === key"
           @click="selectSensitivity(key as Sensitivity)"
         >
           <strong>{{ preset.label }}</strong>
@@ -584,7 +606,7 @@ onMounted(redraw)
         </button>
       </div>
       <details class="advanced">
-        <summary>高级设置</summary>
+        <summary>高级设置 <AppIcon name="chevron" class="fold-chevron" /></summary>
         <div class="config-row">
           <label>参考窗口 <input v-model.number="config.window" type="number" min="2" max="12" /> </label>
           <label>预测步数 <input v-model.number="config.horizon" type="number" min="1" max="12" /> </label>
@@ -594,8 +616,8 @@ onMounted(redraw)
     </section>
 
     <section class="section safe-x">
-      <button class="train-btn" :disabled="!canTrain" @click="run">
-        <AppIcon name="sliders" />
+      <button class="train-btn" :class="{ running: busy }" :disabled="!canTrain" @click="run">
+        <AppIcon name="trend" />
         {{
           busy
             ? progress >= 95
@@ -615,7 +637,7 @@ onMounted(redraw)
 
     <section v-if="result" class="section safe-x">
       <div class="section-heading">
-        <div>
+        <div class="heading-main">
           <span class="step">03</span>
           <h2 class="section-title">预测结果</h2>
         </div>
@@ -623,7 +645,7 @@ onMounted(redraw)
       </div>
       <div class="card result-card">
         <div class="forecast-hero">
-          <span>下一{{ timeUnit }}预测</span>
+          <span class="forecast-label"><AppIcon name="bolt" />下一{{ timeUnit }}预测</span>
           <div>
             <strong>{{ formatValue(result.forecast[0]!) }}</strong
             ><small>{{ activeUnit }}</small>
@@ -634,7 +656,9 @@ onMounted(redraw)
           {{ SAMPLING_PERIODS[samplingPeriod] }} · 单位：{{ activeUnit || '未指定' }} ·
           {{ result.method === 'constant' ? '恒定序列保持末值' : '本地神经网络' }}
         </p>
-        <canvas ref="canvas" class="chart" height="220" role="img" aria-label="历史数据、模型拟合与未来预测折线图" />
+        <div class="chart-box">
+          <canvas ref="canvas" class="chart" height="220" role="img" aria-label="历史数据、模型拟合与未来预测折线图" />
+        </div>
         <p class="legend"><i class="actual" /> 历史数据 <i class="fitted" /> 模型拟合 <i class="predict" /> 未来预测</p>
 
         <div class="insight">
@@ -665,7 +689,7 @@ onMounted(redraw)
         </div>
 
         <details class="evaluation">
-          <summary>查看误差与模型评估</summary>
+          <summary>查看误差与模型评估 <AppIcon name="chevron" class="fold-chevron" /></summary>
           <p class="metrics-caption">回测仅比较历史表现，不保证未来准确；相邻起点的预测目标可能重叠。</p>
           <div class="model-badge">
             {{
@@ -713,210 +737,172 @@ onMounted(redraw)
 </template>
 
 <style scoped>
-.series-meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.series-meta label {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  min-width: 0;
-}
-.series-meta label > span {
-  color: var(--text-2);
-  font-size: var(--fs-xs);
-}
-.series-meta :is(input, select) {
-  width: 100%;
-  min-width: 0;
-  height: 44px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  color: var(--text-1);
-  background: var(--surface-1);
-  font: inherit;
-  font-size: var(--fs-sm);
-}
-.data-check {
-  padding: 14px 16px;
-  margin: 14px 0 22px;
-  border: 1px solid var(--border);
-  background: var(--surface-1);
-  border-radius: var(--r-md);
-  font-size: var(--fs-xs);
-}
-.data-check strong {
-  color: var(--success);
-  font-weight: 600;
-}
-.data-check.invalid strong,
-.check-error {
-  color: var(--danger);
-}
-.data-check p {
-  color: var(--text-2);
-  margin: 8px 0 0;
-  line-height: 1.7;
-  overflow-wrap: anywhere;
-}
-.data-check .check-error {
-  color: var(--danger);
-}
-.result-context {
-  color: var(--text-2);
-  font-size: var(--fs-xs);
-  margin: 0 0 12px;
-  overflow-wrap: anywhere;
-}
-.cancel-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  min-height: 44px;
-  margin-top: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: var(--fs-sm);
-}
-.error {
-  white-space: pre-line;
-}
 .page {
   height: 100%;
   padding-top: var(--safe-top);
-  background: var(--bg);
 }
+
+/* ---- 顶栏 ---- */
 .head {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
   justify-content: space-between;
-  padding: var(--sp-6) var(--sp-4) var(--sp-5);
+  flex-wrap: wrap;
 }
-.eyebrow {
-  margin: 0 0 5px;
-  color: var(--brand);
-  font-size: 0.625rem;
-  letter-spacing: 0.18em;
+.head-copy {
+  min-width: 0;
 }
-.title {
-  margin: 0;
-  font-size: clamp(1.65rem, 6.5vw, 2.25rem);
-  font-weight: 700;
-  color: var(--text-1);
-}
-.subtitle {
-  margin: 6px 0 0;
-  font-size: var(--fs-sm);
-  color: var(--text-2);
+.head .title {
+  font-size: clamp(1.6rem, 6.5vw, 2.1rem);
 }
 .local {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 9px;
+  margin-top: 2px;
+  padding: 5px 10px;
   border-radius: var(--r-full);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
   color: var(--success);
-  background: rgba(79, 209, 165, 0.14);
+  background: var(--success-soft);
+  border: 1px solid var(--success-line);
 }
+
 .section {
-  padding-inline: max(var(--sp-4), var(--safe-left)) max(var(--sp-4), var(--safe-right));
+  padding-inline: max(var(--sp-5), var(--safe-left)) max(var(--sp-5), var(--safe-right));
   margin-bottom: var(--sp-5);
-}
-.section-title {
-  display: inline;
-  margin: 0;
-  font-size: var(--fs-md);
-  color: var(--text-1);
-  letter-spacing: 0;
 }
 .section-heading {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
   margin-bottom: var(--sp-3);
 }
+.heading-main {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.section-title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--text-1);
+}
+/* 步骤编号做成渐变徽标，三步流程一眼可见 */
 .step {
-  margin-right: 7px;
-  color: var(--brand);
-  font-size: 0.625rem;
-  letter-spacing: 0.12em;
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-width: 30px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--r-full);
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 .section-note {
+  flex: none;
   color: var(--text-3);
   font-size: var(--fs-xs);
 }
+
+/* ---- 01 场景：三行列表，图标 + 文字 + 载入按钮 ---- */
 .scene-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-2);
+  gap: 10px;
 }
 .scene-card {
-  position: relative;
   display: flex;
+  align-items: center;
+  gap: 12px;
   min-width: 0;
-  min-height: 160px;
-  padding: var(--sp-3);
-  flex-direction: column;
-  align-items: flex-start;
+  padding: 12px 12px 12px 12px;
   text-align: left;
-  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   color: var(--text-1);
-  background: var(--glass);
-  box-shadow: var(--tech-shadow);
+  background: var(--surface-1);
+  box-shadow: var(--card-shadow);
   transition:
-    transform var(--dur) var(--ease),
-    border-color var(--dur) var(--ease);
+    transform var(--dur-fast) var(--ease),
+    border-color var(--dur) var(--ease),
+    background var(--dur) var(--ease);
 }
-.scene-card::after {
-  display: none;
+.scene-card:active {
+  transform: scale(0.98);
 }
 .scene-card.active {
   border-color: var(--brand);
-  background: var(--brand-soft);
+  background: var(--grad-card);
+  box-shadow:
+    var(--card-shadow),
+    0 0 0 3px color-mix(in srgb, var(--brand) 14%, transparent);
 }
 .scene-icon {
-  font-size: 1.55rem;
-  margin-bottom: 10px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  font-size: 1.6rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
 }
-.scene-card strong {
+.scene-card.active .scene-icon {
+  background: var(--brand-soft);
+  border-color: var(--brand-line);
+}
+.scene-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.scene-copy strong {
   font-size: var(--fs-sm);
+  font-weight: 700;
 }
-.scene-card small {
-  margin-top: 4px;
-  color: var(--text-3);
-  font-size: 0.75rem;
-  line-height: 1.45;
-}
-.scene-card .scene-source {
+.scene-copy small {
   color: var(--text-2);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.scene-copy .scene-source {
+  color: var(--text-3);
   font-size: 0.6875rem;
 }
 .scene-action {
-  margin-top: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 12px;
+  border-radius: var(--r-full);
   color: var(--brand);
-  font-size: 0.625rem;
-  font-weight: 600;
+  background: var(--brand-soft);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.scene-card.active .scene-action {
+  color: var(--brand-on);
+  background: var(--grad-brand);
 }
 
+/* ---- 折叠面板通用 ---- */
 .import-panel,
 .advanced,
 .evaluation {
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  background: var(--glass);
+  background: var(--surface-1);
+  box-shadow: var(--card-shadow);
 }
 .import-panel > summary,
 .advanced > summary,
@@ -934,19 +920,46 @@ onMounted(redraw)
 .evaluation > summary::-webkit-details-marker {
   display: none;
 }
-.import-panel > summary span {
+.fold-chevron {
+  flex: none;
+  color: var(--text-3);
+  transition: transform var(--dur) var(--ease);
+}
+details[open] > summary .fold-chevron {
+  transform: rotate(180deg);
+}
+.import-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: var(--fs-sm);
-  font-weight: 600;
+  gap: 12px;
+  min-width: 0;
 }
-.import-panel > summary small {
+.import-title > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.import-title strong {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.import-title small {
   color: var(--text-3);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
+}
+.import-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  font-size: 1.05rem;
 }
 .import-content {
-  padding: 0 var(--sp-3) var(--sp-3);
+  padding: 0 var(--sp-4) var(--sp-4);
 }
 .data-input {
   width: 100%;
@@ -959,9 +972,13 @@ onMounted(redraw)
   line-height: 1.6;
   resize: vertical;
   outline: none;
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 .data-input:focus {
   border-color: var(--brand);
+  box-shadow: var(--focus-ring);
 }
 .row-actions {
   display: flex;
@@ -974,12 +991,17 @@ onMounted(redraw)
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px;
+  padding: 10px 6px;
   border-radius: var(--r-md);
   font-size: var(--fs-xs);
+  font-weight: 600;
   color: var(--text-2);
   background: var(--surface-2);
   border: 1px solid var(--border);
+  transition: background var(--dur-fast) var(--ease);
+}
+.ghost-btn:active {
+  background: var(--surface-3);
 }
 .ghost-btn:disabled {
   opacity: 0.5;
@@ -987,6 +1009,7 @@ onMounted(redraw)
 .hint {
   margin: 8px 0 0;
   font-size: var(--fs-xs);
+  line-height: 1.6;
   color: var(--text-3);
 }
 .csv-card {
@@ -1032,7 +1055,7 @@ onMounted(redraw)
   padding: 8px;
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  background: var(--surface-2);
+  background-color: var(--surface-2);
   color: var(--text-1);
   font-size: var(--fs-xs);
 }
@@ -1093,55 +1116,152 @@ onMounted(redraw)
   line-height: 0;
   box-shadow: none;
 }
-.config-row {
-  display: flex;
-  gap: var(--sp-2);
+
+/* ---- 采样周期与单位 ---- */
+.series-card {
+  padding: var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-1);
+  box-shadow: var(--card-shadow);
 }
+/* 标签在左、控件在右：周期选项文字较长（如「按序号（周期未知）」），并排两列会被截断 */
+.series-meta {
+  display: grid;
+  gap: 10px;
+}
+.series-meta label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.series-meta label > span {
+  flex: none;
+  width: 4.6em;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.series-meta :is(input, select) {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-1);
+  background-color: var(--surface-2);
+  font: inherit;
+  font-size: var(--fs-sm);
+  outline: none;
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+.series-meta select {
+  padding-right: 34px;
+}
+.series-meta :is(input, select):focus {
+  border-color: var(--brand);
+  box-shadow: var(--focus-ring);
+}
+.series-card .hint {
+  margin-top: 12px;
+}
+.data-check {
+  padding: 13px 15px;
+  margin-top: 12px;
+  border: 1px solid var(--success-line);
+  background: var(--success-soft);
+  border-radius: var(--r-md);
+  font-size: var(--fs-xs);
+}
+.data-check strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--success);
+  font-weight: 700;
+}
+.data-check.invalid {
+  border-color: var(--danger-line);
+  background: var(--danger-soft);
+}
+.data-check.invalid strong,
+.check-error {
+  color: var(--danger);
+}
+.data-check p {
+  color: var(--text-2);
+  margin: 8px 0 0;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.data-check .check-error {
+  color: var(--danger);
+}
+
+/* ---- 02 灵敏度：分段选择器 ---- */
 .sensitivity {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--sp-2);
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-1);
+  box-shadow: var(--card-shadow);
 }
 .sensitivity button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 12px 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: 15px;
   color: var(--text-2);
-  background: var(--glass);
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 .sensitivity button.active {
-  border-color: var(--brand);
   color: var(--brand-on);
-  background: var(--brand-action);
-  box-shadow: 0 9px 24px color-mix(in srgb, var(--brand) 25%, transparent);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
 }
 .sensitivity button strong {
   font-size: var(--fs-sm);
+  font-weight: 700;
 }
 .sensitivity button small {
-  opacity: 0.72;
-  font-size: 0.625rem;
+  opacity: 0.78;
+  font-size: 0.6875rem;
 }
 .advanced {
-  margin-top: var(--sp-2);
+  margin-top: 10px;
 }
 .advanced > summary {
-  padding: 11px var(--sp-3);
-  color: var(--text-3);
+  padding: 12px var(--sp-4);
+  color: var(--text-2);
   font-size: var(--fs-xs);
+  font-weight: 600;
 }
 .advanced .config-row {
-  padding: 0 var(--sp-3) var(--sp-3);
+  padding: 0 var(--sp-4) var(--sp-4);
+}
+.config-row {
+  display: flex;
+  gap: var(--sp-2);
 }
 .config-row label {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 0;
   font-size: var(--fs-xs);
   color: var(--text-2);
 }
@@ -1153,27 +1273,61 @@ onMounted(redraw)
   background: var(--surface-2);
   color: var(--text-1);
   font-size: var(--fs-sm);
+  outline: none;
 }
+.config-row input:focus {
+  border-color: var(--brand);
+}
+
+/* ---- 训练按钮与进度 ---- */
 .train-btn {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--sp-2);
-  padding: 15px;
+  padding: 16px;
   border-radius: var(--r-lg);
-  font-size: var(--fs-sm);
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: 700;
   color: var(--brand-on);
-  background: var(--brand-action);
-  box-shadow: 0 12px 30px color-mix(in srgb, var(--brand) 28%, transparent);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
+  transition:
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur) var(--ease);
+}
+.train-btn:active {
+  transform: scale(0.985);
 }
 .train-btn:disabled {
   opacity: 0.45;
+  box-shadow: none;
+}
+/* 训练中按钮上扫过一道光，提示仍在计算 */
+.train-btn.running::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.28) 50%, transparent 70%);
+  animation: sheen 1.6s linear infinite;
+}
+.train-btn.running:disabled {
+  opacity: 0.85;
+}
+@keyframes sheen {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 .progress {
   height: 6px;
-  margin-top: var(--sp-2);
+  margin-top: 10px;
   overflow: hidden;
   border-radius: var(--r-full);
   background: var(--surface-2);
@@ -1181,76 +1335,145 @@ onMounted(redraw)
 .progress span {
   display: block;
   height: 100%;
-  background: var(--brand-action);
+  border-radius: inherit;
+  background: var(--grad-brand);
   transition: width 0.15s linear;
+}
+.cancel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
 }
 .error {
   margin: var(--sp-2) 0 0;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
   font-size: var(--fs-xs);
+  line-height: 1.6;
+  white-space: pre-line;
   color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-line);
 }
+
+/* ---- 03 结果 ---- */
 .card {
   padding: var(--sp-3);
   border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface-1);
+  box-shadow: var(--tech-shadow);
+}
+.forecast-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 18px 18px 16px;
+  margin-bottom: 14px;
   border-radius: var(--r-lg);
-  background: var(--glass);
-  backdrop-filter: blur(18px);
+  border: 1px solid var(--brand-line);
+  background:
+    radial-gradient(120% 120% at 100% 0%, color-mix(in srgb, var(--brand) 26%, transparent) 0%, transparent 60%),
+    var(--brand-soft);
+}
+.forecast-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.forecast-label .icon {
+  color: var(--brand);
+}
+.forecast-hero > div {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.forecast-hero strong {
+  max-width: 100%;
+  font-size: clamp(32px, 9.5vw, 44px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand);
+  overflow-wrap: anywhere;
+}
+.forecast-hero small {
+  color: var(--text-2);
+  font-weight: 600;
+}
+.forecast-hero p {
+  margin: 8px 0 0;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.result-context {
+  margin: 0 4px 10px;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  overflow-wrap: anywhere;
+}
+.chart-box {
+  padding: 10px 6px 4px 0;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+  border: 1px solid var(--border);
 }
 .chart {
   width: 100%;
   height: 220px;
   display: block;
 }
-.metrics {
-  display: flex;
-  gap: var(--sp-2);
-  margin-top: var(--sp-3);
-}
-/* 指标口径必须写在数字正上方：这组是测试集指标，不是训练集拟合 */
-.metrics-caption {
-  margin: var(--sp-4) 0 0;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--brand);
-}
-.metrics-hint {
-  margin: var(--sp-2) 0 0;
-  font-size: 0.625rem;
-  line-height: 1.7;
-  color: var(--text-3);
-}
-.metrics > div {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--sp-2);
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-}
-.metrics strong {
-  overflow-wrap: anywhere;
-  font-size: var(--fs-md);
-}
-.metrics small {
-  font-size: 0.625rem;
-  color: var(--text-3);
-}
-.forecast-list {
+.legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: var(--sp-3);
+  align-items: center;
+  gap: 6px 12px;
+  margin: 10px 4px 0;
+  font-size: 0.6875rem;
+  color: var(--text-2);
+}
+.legend i {
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  margin-right: -6px;
+  border-top: 2.5px solid;
+  border-radius: 2px;
+}
+.legend .actual {
+  border-color: var(--chart-history);
+}
+.legend .fitted {
+  border-color: var(--chart-fitted);
+  border-top-style: dashed;
+}
+.legend .predict {
+  border-color: var(--chart-forecast);
+  border-top-style: dashed;
 }
 .insight {
   display: flex;
   gap: var(--sp-3);
   margin-top: var(--sp-4);
-  padding: var(--sp-3);
-  border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--border));
+  padding: 14px;
+  border: 1px solid var(--brand-line);
   border-radius: var(--r-md);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, transparent), transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, transparent), transparent 80%);
 }
 .insight-icon {
   display: grid;
@@ -1260,56 +1483,34 @@ onMounted(redraw)
   height: 36px;
   border-radius: 12px;
   color: var(--brand-on);
-  background: var(--brand-action);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
 }
 .insight strong {
   font-size: var(--fs-sm);
+  font-weight: 700;
 }
 .insight p {
   margin: 5px 0 0;
   color: var(--text-2);
   font-size: var(--fs-xs);
-  line-height: 1.65;
-}
-.backtest {
-  margin-top: var(--sp-3);
-  padding: var(--sp-3);
-  border: 1px solid color-mix(in srgb, var(--brand) 32%, var(--border));
-  border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--brand) 7%, var(--surface-1));
-}
-.backtest.caution {
-  border-color: color-mix(in srgb, var(--warning) 42%, var(--border));
-  background: color-mix(in srgb, var(--warning) 7%, var(--surface-1));
-}
-.backtest strong {
-  font-size: var(--fs-xs);
-}
-.backtest p {
-  margin: 6px 0 0;
-  color: var(--text-2);
-  font-size: var(--fs-xs);
-  line-height: 1.6;
-}
-.backtest small {
-  display: block;
-  margin-top: 6px;
-  color: var(--text-3);
-  line-height: 1.5;
+  line-height: 1.7;
 }
 .forecast-title {
-  margin: var(--sp-4) 0 var(--sp-2);
+  margin: var(--sp-4) 4px var(--sp-2);
   font-size: var(--fs-sm);
+  font-weight: 700;
 }
 .forecast-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
+  margin-bottom: 14px;
 }
 .forecast-day {
   display: flex;
   min-width: 0;
-  padding: 9px 5px;
+  padding: 10px 5px 9px;
   flex-direction: column;
   align-items: center;
   border: 1px solid var(--border);
@@ -1318,76 +1519,104 @@ onMounted(redraw)
 }
 .forecast-day small {
   color: var(--text-3);
-  font-size: 0.5625rem;
+  font-size: 0.625rem;
 }
 .forecast-day strong {
   max-width: 100%;
   overflow-wrap: anywhere;
   margin-top: 3px;
-  color: var(--warning);
+  color: var(--chart-forecast);
   font-size: var(--fs-md);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
 }
 .forecast-day span {
   max-width: 100%;
   overflow-wrap: anywhere;
   color: var(--text-3);
-  font-size: 0.5625rem;
+  font-size: 0.625rem;
+}
+.backtest {
+  padding: 13px 14px;
+  border: 1px solid var(--success-line);
+  border-radius: var(--r-md);
+  background: var(--success-soft);
+  font-size: var(--fs-xs);
+}
+.backtest.caution {
+  border-color: var(--warning-line);
+  background: var(--warning-soft);
+}
+.backtest strong {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.backtest p {
+  margin: 6px 0 0;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  line-height: 1.65;
 }
 .evaluation {
-  margin-top: var(--sp-4);
-  background: var(--surface-1);
+  margin-top: var(--sp-3);
+  box-shadow: none;
 }
 .evaluation > summary {
   padding: 12px var(--sp-3);
   color: var(--text-2);
   font-size: var(--fs-xs);
+  font-weight: 600;
 }
 .evaluation[open] {
   padding-bottom: var(--sp-3);
 }
+/* 指标口径必须写在数字正上方：这组是测试集指标，不是训练集拟合 */
+.metrics-caption {
+  margin: var(--sp-3) var(--sp-3) 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--brand);
+}
 .model-badge {
-  margin: 0 var(--sp-3);
+  margin: var(--sp-2) var(--sp-3) 0;
   padding: 8px 10px;
   border-radius: var(--r-sm);
   color: var(--brand);
   background: var(--brand-soft);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
 }
-.evaluation .metrics,
-.evaluation .metrics-hint {
-  margin-inline: var(--sp-3);
-}
-.forecast-chip {
-  padding: 5px 10px;
-  border-radius: var(--r-full);
-  font-size: var(--fs-xs);
-  color: var(--warning);
-  background: rgba(255, 196, 107, 0.14);
-}
-.legend {
+.metrics {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: var(--sp-3) 0 0;
+  gap: var(--sp-2);
+  margin: var(--sp-3) var(--sp-3) 0;
+}
+.metrics > div {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+.metrics strong {
+  overflow-wrap: anywhere;
+  font-size: var(--fs-md);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.metrics small {
   font-size: 0.625rem;
   color: var(--text-3);
 }
-.legend i {
-  display: inline-block;
-  width: 16px;
-  height: 0;
-  border-top: 2px solid;
-}
-.legend .actual {
-  border-color: var(--chart-history);
-}
-.legend .fitted {
-  border-color: var(--chart-fitted);
-  border-style: dashed;
-}
-.legend .predict {
-  border-color: var(--chart-forecast);
-  border-style: dashed;
+.metrics-hint {
+  margin: var(--sp-2) var(--sp-3) 0;
+  font-size: 0.6875rem;
+  line-height: 1.7;
+  color: var(--text-3);
 }
 .export-actions {
   display: grid;
@@ -1400,83 +1629,43 @@ onMounted(redraw)
   align-items: center;
   justify-content: center;
   gap: 7px;
-  min-height: 44px;
+  min-height: 46px;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  color: var(--text-2);
+  color: var(--text-1);
   background: var(--surface-2);
   font-size: var(--fs-xs);
-  font-weight: 600;
+  font-weight: 700;
+  transition: transform var(--dur-fast) var(--ease);
+}
+.export-btn:active {
+  transform: scale(0.97);
 }
 .export-btn.primary {
   color: var(--brand-on);
   border-color: transparent;
-  background: var(--brand-action);
-  box-shadow: 0 10px 24px rgba(91, 124, 250, 0.22);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
 }
 .tail {
   height: var(--sp-6);
 }
+
 @media (max-width: 360px) {
-  .scene-grid {
-    grid-template-columns: 1fr;
+  .scene-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 1.4rem;
   }
-  .scene-card {
-    min-height: 110px;
+  .scene-action {
+    padding: 6px 10px;
   }
   .forecast-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-}
-
-.forecast-hero {
-  padding: 20px;
-  margin-bottom: 18px;
-  border-radius: var(--r-lg);
-  border: 1px solid var(--border);
-  background: linear-gradient(130deg, var(--brand-soft), var(--surface-1));
-}
-.forecast-hero > span {
-  color: var(--text-2);
-  font-size: var(--fs-xs);
-}
-.forecast-hero > div {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-.forecast-hero strong {
-  font-size: clamp(30px, 9vw, 42px);
-  line-height: 1.2;
-  color: var(--brand);
-  letter-spacing: -0.03em;
-  overflow-wrap: anywhere;
-  max-width: 100%;
-}
-.forecast-hero small {
-  color: var(--text-2);
-}
-.forecast-hero p {
-  margin: 10px 0 0;
-  color: var(--text-3);
-  font-size: var(--fs-xs);
-}
-.forecast-grid {
-  margin-bottom: 18px;
-}
-.forecast-day {
-  min-width: 0;
-}
-.forecast-day strong {
-  overflow-wrap: anywhere;
-}
-.backtest {
-  font-size: var(--fs-xs);
-}
-.scene-card {
-  min-height: 140px;
+  .row-actions .ghost-btn {
+    padding-inline: 4px;
+  }
 }
 </style>

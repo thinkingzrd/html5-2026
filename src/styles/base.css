@@ -33,7 +33,8 @@ body {
   background-color: var(--bg);
   color: var(--text-1);
   font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'HarmonyOS Sans SC', 'MiSans', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Noto Sans SC', sans-serif;
   font-size: var(--fs-md);
   line-height: 1.55;
   letter-spacing: 0;
@@ -52,32 +53,91 @@ body {
   min-height: 100dvh;
 }
 
-/* 手机界面共用的留白、标题层次与安全区。 */
+::selection {
+  background: color-mix(in srgb, var(--brand) 32%, transparent);
+}
+
+::placeholder {
+  color: var(--text-3);
+  opacity: 1;
+}
+
+/* 应用自带「显示 / 隐藏」按钮，去掉 Edge 在密码框里再画的一只眼睛 */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+/* ---------------- 手机界面共用的页面顶栏 ---------------- */
 .shell .page > .head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
   padding-left: max(20px, var(--safe-left));
   padding-right: max(20px, var(--safe-right));
   padding-top: 24px;
-  padding-bottom: 22px;
+  padding-bottom: 20px;
 }
 .shell .page > .head .title {
+  margin: 0;
+  color: var(--text-1);
   font-size: 1.625rem;
+  font-weight: 750;
+  line-height: 1.25;
   letter-spacing: -0.025em;
 }
 .shell .page > .head .subtitle {
+  margin: 6px 0 0;
+  color: var(--text-2);
   font-size: 0.8125rem;
   line-height: 1.65;
+}
+.shell .page > .head .eyebrow {
+  margin: 0 0 6px;
+  color: var(--brand);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
 }
 .shell .page > .section.safe-x {
   padding-left: max(20px, var(--safe-left));
   padding-right: max(20px, var(--safe-right));
 }
+/* 子页面返回按钮：圆角方块 + 细描边 + 轻投影，五套主题统一 */
 .shell .page .back {
+  flex: none;
+  display: grid;
+  place-items: center;
   width: 42px;
   height: 42px;
+  margin-top: 1px;
   border-radius: 14px;
+  color: var(--text-1);
+  font-size: 1.25rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  transition:
+    transform var(--dur-fast) var(--ease),
+    background var(--dur) var(--ease);
+}
+.shell .page .back:active {
+  transform: scale(0.92);
+  background: var(--surface-2);
 }
 .shell .page :is(.primary-btn, .start-btn, .train-btn, .outline-btn, .ghost-btn, .answer) {
   min-height: 44px;
+}
+/* 下拉框统一换成细线箭头，深浅主题各用一种颜色（见 theme.css 的 --select-arrow） */
+.shell select:not([multiple]) {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 34px;
+  background-image: var(--select-arrow);
+  background-position: right 12px center;
+  background-size: 15px 15px;
+  background-repeat: no-repeat;
+  text-overflow: ellipsis;
 }
 @media (pointer: coarse) {
   .shell input:not([type='range']),
@@ -115,6 +175,10 @@ button {
   touch-action: manipulation;
 }
 
+button:disabled {
+  cursor: not-allowed;
+}
+
 a {
   color: var(--brand);
   text-decoration: none;
@@ -126,7 +190,8 @@ a {
 }
 
 input,
-textarea {
+textarea,
+select {
   font: inherit;
   color: inherit;
 }

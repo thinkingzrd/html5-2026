@@ -181,6 +181,7 @@ async function remove(id: string): Promise<void> {
   <div class="page scroll-y">
     <header class="head safe-x">
       <div>
+        <p class="eyebrow">问知 · 知识库</p>
         <h1 class="title">资料</h1>
         <p class="subtitle">丢进资料，带着出处提问</p>
       </div>
@@ -188,7 +189,13 @@ async function remove(id: string): Promise<void> {
 
     <section class="section safe-x">
       <details class="import-fold">
-        <summary>导入资料 <AppIcon name="chevron" /></summary>
+        <summary>
+          <span class="fold-title">
+            <span class="fold-icon"><AppIcon name="plus" /></span>
+            <span class="fold-copy"><strong>导入资料</strong><small>粘贴文本，或选择 TXT / PDF</small></span>
+          </span>
+          <AppIcon name="chevron" class="fold-chevron" />
+        </summary>
         <div class="import-card">
           <button class="demo-fill" @click="fillDemoDocument"><AppIcon name="sparkle" />填入示例资料</button>
           <input v-model="title" class="title-input" placeholder="资料标题（如：课程设计要求）" />
@@ -223,7 +230,8 @@ async function remove(id: string): Promise<void> {
         资料库 <span class="count">{{ rag.documents.length }}</span>
       </h2>
       <div v-if="!rag.documents.length" class="empty-mini">
-        <AppIcon name="library" /><span>还没有资料，先粘贴一段文本吧</span>
+        <span class="empty-icon"><AppIcon name="library" /></span>
+        <span>还没有资料，先粘贴一段文本吧</span>
       </div>
       <article v-for="doc in rag.documents" :key="doc.id" class="doc-card">
         <!-- 图标与标题整体做成按钮：点开看这份资料切出来的分块 -->
@@ -235,13 +243,13 @@ async function remove(id: string): Promise<void> {
           </span>
         </button>
         <button
-          class="doc-action"
+          class="doc-ask"
           :disabled="chat.streaming"
           aria-label="问这份资料"
           title="问这份资料"
           @click="askDocument(doc.id)"
         >
-          <AppIcon name="chat" />
+          <AppIcon name="chat" /><span>提问</span>
         </button>
         <button class="doc-action danger" aria-label="删除资料" @click="remove(doc.id)">
           <AppIcon name="trash" />
@@ -251,7 +259,13 @@ async function remove(id: string): Promise<void> {
 
     <section class="section safe-x">
       <details class="search-fold">
-        <summary>查找原文 <AppIcon name="chevron" /></summary>
+        <summary>
+          <span class="fold-title">
+            <span class="fold-icon"><AppIcon name="search" /></span>
+            <span class="fold-copy"><strong>查找原文</strong><small>按关键词检索资料片段</small></span>
+          </span>
+          <AppIcon name="chevron" class="fold-chevron" />
+        </summary>
         <div class="search-row">
           <input
             v-model="query"
@@ -259,13 +273,15 @@ async function remove(id: string): Promise<void> {
             placeholder="例如：这份资料的核心要求是什么？"
             @keydown.enter="search"
           /><button class="search-btn" :disabled="searching" aria-label="检索资料" @click="search">
-            <AppIcon name="chat" />
+            <AppIcon name="search" />
           </button>
         </div>
         <div v-if="hits.length" class="hits">
           <article v-for="(hit, index) in hits" :key="hit.chunk.id" class="hit">
             <div class="hit-head">
-              <span>[{{ index + 1 }}] {{ hit.chunk.documentTitle }}</span
+              <span
+                ><em>{{ index + 1 }}</em
+                >{{ hit.chunk.documentTitle }}</span
               ><small>原文片段</small>
             </div>
             <p>{{ hit.chunk.content }}</p>
@@ -283,6 +299,7 @@ async function remove(id: string): Promise<void> {
     -->
     <div v-if="browsing" class="sheet" role="dialog" aria-modal="true" :aria-label="`${browsing.title} 的分块`">
       <header class="sheet-head">
+        <span class="sheet-icon" aria-hidden="true"><AppIcon name="library" /></span>
         <div class="sheet-head-text">
           <p class="sheet-title">{{ browsing.title }}</p>
           <p class="sheet-sub">共 {{ browseChunks.length }} 块 · 正在渲染第 {{ chunkStart + 1 }}–{{ chunkEnd }} 块</p>
@@ -308,13 +325,15 @@ async function remove(id: string): Promise<void> {
     <!-- 单块全文。独立一层，盖在分块列表之上，列表的滚动位置不受影响 -->
     <div v-if="viewingChunk" class="chunk-detail" role="dialog" aria-modal="true" aria-label="分块全文">
       <header class="sheet-head">
+        <button class="sheet-close" aria-label="返回列表" @click="viewingChunk = null">
+          <AppIcon name="back" />返回
+        </button>
         <div class="sheet-head-text">
           <p class="sheet-title">第 {{ viewingChunk.index + 1 }} 块</p>
           <p class="sheet-sub">
             {{ viewingChunk.content.length }} 字 · 原文位置 {{ viewingChunk.start }}–{{ viewingChunk.end }}
           </p>
         </div>
-        <button class="sheet-close" aria-label="返回列表" @click="viewingChunk = null">返回</button>
       </header>
       <div class="detail-body scroll-y">
         <p>{{ viewingChunk.content }}</p>
@@ -328,52 +347,103 @@ async function remove(id: string): Promise<void> {
   height: 100%;
   padding-top: var(--safe-top);
 }
-.head {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  padding: var(--sp-5) var(--sp-5) var(--sp-3);
-}
-.title {
-  margin: 0;
-  font-size: var(--fs-xl);
-  font-weight: 700;
-}
-.subtitle {
-  margin: 6px 0 0;
-  font-size: var(--fs-sm);
-  color: var(--text-2);
-}
-.mode {
-  padding: 4px 8px;
-  border-radius: var(--r-full);
-  font-size: 0.625rem;
-  color: var(--warning);
-  background: rgba(255, 196, 107, 0.12);
-}
-.mode.vector {
-  color: var(--success);
-  background: rgba(79, 209, 165, 0.12);
-}
 .section {
   margin-bottom: var(--sp-5);
 }
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 var(--sp-3);
-  font-size: var(--fs-sm);
-  color: var(--text-2);
-  letter-spacing: 0.06em;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--text-1);
 }
 .count {
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: var(--r-full);
+  text-align: center;
+  font-size: var(--fs-xs);
   color: var(--brand);
+  background: var(--brand-soft);
 }
-.import-card {
-  padding: var(--sp-4);
+
+/* ---- 折叠面板：导入资料 / 查找原文 ---- */
+.import-fold,
+.search-fold {
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  background: linear-gradient(145deg, var(--bg-glow), var(--surface-1) 65%);
+  background: var(--surface-1);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+.import-fold > summary,
+.search-fold > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  list-style: none;
+  cursor: pointer;
+}
+.import-fold > summary::-webkit-details-marker,
+.search-fold > summary::-webkit-details-marker {
+  display: none;
+}
+.import-fold[open] > summary,
+.search-fold[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+.fold-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.fold-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  font-size: 1.1rem;
+}
+.import-fold .fold-icon {
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
+}
+.fold-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.fold-copy strong {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.fold-copy small {
+  color: var(--text-3);
+  font-size: 0.6875rem;
+}
+.fold-chevron {
+  flex: none;
+  color: var(--text-3);
+  transition: transform var(--dur) var(--ease);
+}
+details[open] > summary .fold-chevron {
+  transform: rotate(180deg);
+}
+
+.import-card {
+  padding: var(--sp-4);
+  background: var(--grad-card);
 }
 .demo-fill {
   width: 100%;
@@ -383,12 +453,16 @@ async function remove(id: string): Promise<void> {
   gap: 7px;
   margin-bottom: var(--sp-3);
   padding: 11px 14px;
-  border: 1px solid color-mix(in srgb, var(--brand) 34%, var(--border));
+  border: 1px dashed color-mix(in srgb, var(--brand) 50%, var(--border));
   border-radius: var(--r-md);
   color: var(--brand);
-  background: linear-gradient(135deg, var(--brand-soft), transparent);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
   font-size: var(--fs-sm);
   font-weight: 650;
+  transition: background var(--dur-fast) var(--ease);
+}
+.demo-fill:active {
+  background: var(--brand-soft);
 }
 .title-input,
 .text-input,
@@ -399,9 +473,12 @@ async function remove(id: string): Promise<void> {
   background: var(--surface-2);
   outline: none;
   font-size: var(--fs-sm);
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 .title-input {
-  padding: 10px 12px;
+  padding: 11px 12px;
   margin-bottom: var(--sp-2);
 }
 .text-input {
@@ -413,6 +490,7 @@ async function remove(id: string): Promise<void> {
 .text-input:focus,
 .search-input:focus {
   border-color: var(--brand);
+  box-shadow: var(--focus-ring);
 }
 .import-actions {
   display: flex;
@@ -426,9 +504,17 @@ async function remove(id: string): Promise<void> {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 11px;
+  padding: 12px 8px;
   border-radius: var(--r-md);
   font-size: var(--fs-sm);
+  font-weight: 650;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur) var(--ease);
+}
+.secondary-btn:active,
+.primary-btn:active {
+  transform: scale(0.97);
 }
 .secondary-btn {
   color: var(--text-2);
@@ -437,14 +523,15 @@ async function remove(id: string): Promise<void> {
 }
 .primary-btn {
   color: var(--brand-on);
-  background: var(--brand-action);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
 }
 .primary-btn:disabled {
   opacity: 0.5;
 }
 .progress {
   position: relative;
-  height: 28px;
+  height: 30px;
   margin-top: var(--sp-2);
   overflow: hidden;
   border-radius: var(--r-sm);
@@ -453,43 +540,62 @@ async function remove(id: string): Promise<void> {
 .progress span {
   position: absolute;
   inset: 0 auto 0 0;
-  background: var(--brand-soft);
+  background: color-mix(in srgb, var(--brand) 26%, transparent);
   transition: width 0.2s;
 }
 .progress small {
   position: relative;
   display: block;
   padding: 7px 10px;
-  font-size: 0.625rem;
-  color: var(--text-2);
+  font-size: 0.6875rem;
+  color: var(--text-1);
 }
+
+/* ---- 资料库 ---- */
 .empty-mini {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-2);
-  padding: var(--sp-5);
-  border: 1px dashed var(--border);
-  border-radius: var(--r-md);
-  color: var(--text-3);
+  gap: 10px;
+  padding: 26px var(--sp-5);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  color: var(--text-2);
+  background: color-mix(in srgb, var(--surface-1) 60%, transparent);
   font-size: var(--fs-xs);
+}
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  font-size: 1.3rem;
 }
 .doc-card {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-3);
-  margin-bottom: var(--sp-2);
+  padding: 10px 10px 10px 12px;
+  margin-bottom: 10px;
   border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
   background: var(--surface-1);
+  box-shadow: var(--card-shadow);
 }
 .doc-icon {
   flex: none;
   display: grid;
   place-items: center;
-  color: var(--brand);
-  font-size: 1.25rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  color: var(--tone-4);
+  background: color-mix(in srgb, var(--tone-4) 15%, transparent);
+  font-size: 1.2rem;
 }
 /* 图标 + 标题整体可点，用来打开分块面板 */
 .doc-open {
@@ -497,7 +603,7 @@ async function remove(id: string): Promise<void> {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: 12px;
   text-align: left;
 }
 .doc-open:active {
@@ -512,29 +618,50 @@ async function remove(id: string): Promise<void> {
 }
 .doc-body strong {
   font-size: var(--fs-sm);
+  font-weight: 650;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .doc-body small {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   color: var(--text-3);
 }
+.doc-ask {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--r-full);
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur) var(--ease);
+}
+.doc-ask:active {
+  transform: scale(0.94);
+}
+.doc-ask:disabled {
+  opacity: 0.45;
+}
 .doc-action {
-  width: 32px;
-  height: 32px;
+  flex: none;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border-radius: var(--r-full);
-  color: var(--brand);
+  color: var(--text-3);
   font-size: 0.9375rem;
-}
-.doc-action:active {
-  background: var(--brand-soft);
 }
 .doc-action.danger:active {
   color: var(--danger);
-  background: rgba(255, 107, 129, 0.12);
+  background: var(--danger-soft);
 }
 
 /* ---------- 分块浏览面板 ---------- */
@@ -546,14 +673,36 @@ async function remove(id: string): Promise<void> {
   flex-direction: column;
   background: var(--bg);
   padding-top: var(--safe-top);
+  animation: sheet-in var(--dur) var(--ease);
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 .sheet-head {
   flex: none;
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-4) var(--sp-5);
+  padding: 14px var(--sp-5);
   border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+}
+.sheet-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  color: var(--tone-4);
+  background: color-mix(in srgb, var(--tone-4) 15%, transparent);
 }
 .sheet-head-text {
   flex: 1;
@@ -562,27 +711,33 @@ async function remove(id: string): Promise<void> {
 .sheet-title {
   margin: 0;
   font-size: var(--fs-sm);
-  font-weight: 600;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .sheet-sub {
   margin: 3px 0 0;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   color: var(--text-3);
 }
 .sheet-close {
   flex: none;
-  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
   border-radius: var(--r-full);
   font-size: var(--fs-xs);
-  color: var(--text-2);
-  background: var(--surface-1);
+  color: var(--text-1);
+  background: var(--surface-2);
   border: 1px solid var(--border);
 }
 .sheet-close:active {
-  background: var(--surface-2);
+  background: var(--surface-3);
 }
 /* 虚拟滚动的滚动容器：必须有确定高度（flex:1 + min-height:0），
    否则 clientHeight 量出来是 0，可见区间就算不对 */
@@ -608,21 +763,21 @@ async function remove(id: string): Promise<void> {
   align-items: center;
   gap: var(--sp-2);
   line-height: 1.4;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   color: var(--text-3);
 }
 .chunk-index {
-  color: var(--brand);
-}
-.chunk-vec {
-  padding: 1px 6px;
+  padding: 0 7px;
   border-radius: var(--r-full);
-  color: var(--success);
-  background: rgba(79, 209, 165, 0.12);
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--brand-soft);
 }
 .chunk-toggle {
   margin-left: auto;
-  font-size: 0.625rem;
+  padding: 0 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
   color: var(--brand);
 }
 .chunk-text {
@@ -647,6 +802,7 @@ async function remove(id: string): Promise<void> {
   flex-direction: column;
   background: var(--bg);
   padding-top: var(--safe-top);
+  animation: sheet-in var(--dur) var(--ease);
 }
 .detail-body {
   flex: 1;
@@ -655,26 +811,37 @@ async function remove(id: string): Promise<void> {
 }
 .detail-body p {
   margin: 0;
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
   font-size: var(--fs-sm);
-  line-height: 1.85;
+  line-height: 1.9;
   color: var(--text-1);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ---- 查找原文 ---- */
 .search-row {
   display: flex;
   gap: var(--sp-2);
 }
 .search-input {
   flex: 1;
+  min-width: 0;
   padding: 11px 12px;
 }
 .search-btn {
-  width: 42px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
   border-radius: var(--r-md);
   color: var(--brand-on);
-  background: var(--brand-action);
+  background: var(--grad-brand);
   font-size: 1.125rem;
+  box-shadow: var(--shadow-brand);
 }
 .search-btn:disabled {
   opacity: 0.5;
@@ -683,71 +850,53 @@ async function remove(id: string): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  margin-top: var(--sp-3);
 }
 .hit {
   padding: var(--sp-3);
   border-radius: var(--r-md);
   border: 1px solid var(--border);
-  background: var(--surface-1);
+  background: var(--surface-2);
 }
 .hit-head {
   display: flex;
   justify-content: space-between;
   gap: var(--sp-2);
-  color: var(--brand);
+  color: var(--text-1);
   font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.hit-head em {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  border-radius: 6px;
+  font-style: normal;
+  font-size: 0.6875rem;
+  color: var(--brand-on);
+  background: var(--grad-brand);
 }
 .hit-head small {
+  flex: none;
   color: var(--text-3);
+  font-weight: 400;
 }
 .hit p {
   margin: 8px 0 0;
   font-size: var(--fs-sm);
-  line-height: 1.65;
+  line-height: 1.7;
   color: var(--text-2);
 }
 .error {
-  margin-bottom: var(--sp-3);
+  margin: 0 0 var(--sp-3);
+  padding-inline: max(20px, var(--safe-left)) max(20px, var(--safe-right));
   color: var(--danger);
   font-size: var(--fs-xs);
+  line-height: 1.6;
 }
 .tail {
   height: var(--sp-6);
-}
-
-.import-fold,
-.search-fold {
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  background: var(--surface-1);
-  overflow: hidden;
-}
-.import-fold > summary,
-.search-fold > summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  list-style: none;
-  font-size: var(--fs-sm);
-  cursor: pointer;
-}
-.import-fold > summary::-webkit-details-marker,
-.search-fold > summary::-webkit-details-marker {
-  display: none;
-}
-.import-fold[open] > summary,
-.search-fold[open] > summary {
-  border-bottom: 1px solid var(--border);
-}
-.import-fold[open] > summary .icon,
-.search-fold[open] > summary .icon {
-  transform: rotate(180deg);
-}
-.import-fold .import-card {
-  border: 0;
-  border-radius: 0;
 }
 .search-fold .search-row,
 .search-fold .hits {

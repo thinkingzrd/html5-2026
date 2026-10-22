@@ -32,19 +32,25 @@ withDefaults(
   text-align: center;
   padding: var(--sp-6) var(--sp-5);
   gap: var(--sp-2);
+  border-radius: var(--r-xl);
+  border: 1px dashed var(--border-strong);
+  background: color-mix(in srgb, var(--surface-1) 55%, transparent);
 }
 
+/* 图标外再套一圈淡淡的光环，空状态不至于显得冷清 */
 .empty-icon {
   width: 62px;
   height: 62px;
-  border-radius: var(--r-full);
+  border-radius: 21px;
   display: grid;
   place-items: center;
   font-size: 1.625rem;
   color: var(--brand);
   background: var(--brand-soft);
-  margin-bottom: var(--sp-2);
-  animation: pop var(--dur-slow) var(--ease);
+  border: 1px solid var(--brand-line);
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--brand) 7%, transparent);
+  margin-bottom: var(--sp-3);
+  animation: pop var(--dur-slow) var(--ease-spring);
 }
 
 @keyframes pop {
@@ -61,7 +67,7 @@ withDefaults(
 .empty-title {
   margin: 0;
   font-size: var(--fs-md);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .empty-desc {
@@ -70,5 +76,9 @@ withDefaults(
   color: var(--text-2);
   max-width: 30ch;
   line-height: 1.7;
+  /* 优先在标点处折行，两行尽量等长，避免末行只剩一两个字 */
+  text-wrap: balance;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 </style>

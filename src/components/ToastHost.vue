@@ -35,29 +35,39 @@ const { items } = useToast()
 .toast {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: 10px;
   max-width: 100%;
-  padding: 9px 15px;
+  padding: 7px 16px 7px 7px;
   border-radius: var(--r-full);
   font-size: var(--fs-sm);
+  line-height: 1.45;
   color: var(--text-1);
-  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   border: 1px solid var(--border-strong);
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.34);
+  box-shadow: var(--shadow-lg);
 }
 
+/* 图标放进一枚语义色小圆片：成功绿、失败红，其余用品牌色 */
 .toast-icon {
-  font-size: 0.9375rem;
+  flex: none;
+  box-sizing: content-box;
+  padding: 6px;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  color: var(--brand);
+  background: var(--brand-soft);
 }
 
 .toast.success .toast-icon {
   color: var(--success);
+  background: var(--success-soft);
 }
 
 .toast.error .toast-icon {
   color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .toast-enter-active,

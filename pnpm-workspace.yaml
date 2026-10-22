@@ -3,5 +3,5 @@ allowBuilds:
   esbuild: false
   core-js: false
 
-# pnpm 内容寻址存储固定在项目内，避免不同环境 store 位置漂移
-storeDir: D:\Project\html5课程设计\Myapp\.pnpm-store
+# 使用项目相对路径，避免依赖本机磁盘和用户目录。
+storeDir: .pnpm-store

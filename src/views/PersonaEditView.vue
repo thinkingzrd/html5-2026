@@ -120,7 +120,7 @@ function goBack(): void {
   <div class="page scroll-y">
     <header class="head safe-x">
       <button class="back" aria-label="返回" @click="goBack">
-        <AppIcon name="close" />
+        <AppIcon name="back" />
       </button>
       <div class="head-text">
         <h1 class="title">{{ title }}</h1>
@@ -128,70 +128,74 @@ function goBack(): void {
       </div>
     </header>
 
-    <p v-if="missing" class="warn safe-x">找不到这个角色，可能已被删除。下面按新建处理。</p>
+    <p v-if="missing" class="warn safe-x"><AppIcon name="alert" />找不到这个角色，可能已被删除。下面按新建处理。</p>
 
     <section class="form safe-x">
-      <label class="field">
-        <span class="field-label">名称</span>
-        <input v-model="form.name" class="input" maxlength="12" placeholder="例如：健身教练" />
-      </label>
-
-      <div class="field">
-        <span class="field-label">头像</span>
-        <div class="avatar-row">
-          <input v-model="form.avatar" class="input avatar-input" maxlength="8" aria-label="自定义头像" />
-          <div class="avatar-picks">
-            <button
-              v-for="emoji in AVATARS"
-              :key="emoji"
-              class="avatar-pick"
-              :class="{ on: form.avatar === emoji }"
-              type="button"
-              @click="form.avatar = emoji"
-            >
-              {{ emoji }}
-            </button>
+      <div class="form-card">
+        <div class="field">
+          <span class="field-label">头像</span>
+          <div class="avatar-row">
+            <input v-model="form.avatar" class="input avatar-input" maxlength="8" aria-label="自定义头像" />
+            <div class="avatar-picks">
+              <button
+                v-for="emoji in AVATARS"
+                :key="emoji"
+                class="avatar-pick"
+                :class="{ on: form.avatar === emoji }"
+                type="button"
+                @click="form.avatar = emoji"
+              >
+                {{ emoji }}
+              </button>
+            </div>
           </div>
         </div>
+
+        <label class="field">
+          <span class="field-label">名称</span>
+          <input v-model="form.name" class="input" maxlength="12" placeholder="例如：健身教练" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">一句话介绍</span>
+          <input v-model="form.tagline" class="input" maxlength="30" placeholder="例如：帮我把训练计划排明白" />
+        </label>
       </div>
 
-      <label class="field">
-        <span class="field-label">一句话介绍</span>
-        <input v-model="form.tagline" class="input" maxlength="30" placeholder="例如：帮我把训练计划排明白" />
-      </label>
+      <div class="form-card">
+        <label class="field">
+          <span class="field-label">身份设定</span>
+          <textarea
+            v-model="form.identity"
+            class="input area"
+            rows="4"
+            maxlength="300"
+            placeholder="它是谁？做什么的？以什么立场说话？例如：你是一位有十年经验的健身教练，负责给零基础的人排可执行的训练计划。"
+          />
+        </label>
 
-      <label class="field">
-        <span class="field-label">身份设定</span>
-        <textarea
-          v-model="form.identity"
-          class="input area"
-          rows="4"
-          maxlength="300"
-          placeholder="它是谁？做什么的？以什么立场说话？例如：你是一位有十年经验的健身教练，负责给零基础的人排可执行的训练计划。"
-        />
-      </label>
+        <label class="field">
+          <span class="field-label">说话语气（一行一条）</span>
+          <textarea
+            v-model="form.speechStyle"
+            class="input area"
+            rows="3"
+            maxlength="400"
+            placeholder="先问清我的目标和可用时间，再给方案&#10;说人话，不要堆专业名词"
+          />
+        </label>
 
-      <label class="field">
-        <span class="field-label">说话语气（一行一条）</span>
-        <textarea
-          v-model="form.speechStyle"
-          class="input area"
-          rows="3"
-          maxlength="400"
-          placeholder="先问清我的目标和可用时间，再给方案&#10;说人话，不要堆专业名词"
-        />
-      </label>
-
-      <label class="field">
-        <span class="field-label">禁忌（一行一条）</span>
-        <textarea
-          v-model="form.taboos"
-          class="input area"
-          rows="3"
-          maxlength="300"
-          placeholder="不要给出我身体条件做不到的计划&#10;不要编造医学结论"
-        />
-      </label>
+        <label class="field">
+          <span class="field-label">禁忌（一行一条）</span>
+          <textarea
+            v-model="form.taboos"
+            class="input area"
+            rows="3"
+            maxlength="300"
+            placeholder="不要给出我身体条件做不到的计划&#10;不要编造医学结论"
+          />
+        </label>
+      </div>
 
       <p v-if="fromTemp" class="hint">
         这是由「想和谁聊」临时生成的角色。保存后会成为一个正式角色，长期留在「我的角色」里。
@@ -199,10 +203,12 @@ function goBack(): void {
 
       <p v-if="personas.errorText" class="error">{{ personas.errorText }}</p>
 
-      <button class="primary-btn" :disabled="personas.busy" @click="submit">{{ submitText }}</button>
+      <button class="primary-btn" :disabled="personas.busy" @click="submit">
+        <AppIcon name="check" />{{ submitText }}
+      </button>
 
       <button v-if="editable" class="danger-btn" :class="{ armed }" @click="armed ? remove() : armDelete()">
-        {{ armed ? '再点一次确认删除' : '删除这个角色' }}
+        <AppIcon name="trash" />{{ armed ? '再点一次确认删除' : '删除这个角色' }}
       </button>
     </section>
 
@@ -216,56 +222,40 @@ function goBack(): void {
   padding-top: var(--safe-top);
 }
 
-.head {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sp-3);
-  padding: var(--sp-5) var(--sp-5) var(--sp-4);
-}
-
-.back {
-  flex: none;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-full);
-  font-size: 1.125rem;
-  color: var(--text-2);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-}
-
-.back:active {
-  background: var(--surface-2);
-}
-
 .head-text {
   min-width: 0;
 }
 
-.title {
-  margin: 0;
-  font-size: var(--fs-xl);
-  font-weight: 700;
-}
-
-.subtitle {
-  margin: 6px 0 0;
-  font-size: var(--fs-sm);
-  color: var(--text-2);
-}
-
 .warn {
-  margin: 0 0 var(--sp-4);
-  padding: 0 var(--sp-5);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 max(20px, var(--safe-right)) var(--sp-4) max(20px, var(--safe-left));
+  padding: 10px 12px;
+  border-radius: var(--r-md);
   font-size: var(--fs-xs);
   line-height: 1.65;
+  color: var(--text-1);
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-line);
+}
+
+.warn .icon {
+  flex: none;
   color: var(--warning);
 }
 
 .form {
-  padding: 0 var(--sp-5);
+  padding: 0 max(20px, var(--safe-right)) 0 max(20px, var(--safe-left));
+}
+
+.form-card {
+  margin-bottom: 14px;
+  padding: 16px 16px 4px;
+  border-radius: var(--r-xl);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
 }
 
 .field {
@@ -275,8 +265,9 @@ function goBack(): void {
 
 .field-label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
   font-size: var(--fs-xs);
+  font-weight: 600;
   color: var(--text-2);
 }
 
@@ -284,17 +275,20 @@ function goBack(): void {
   width: 100%;
   padding: 11px 13px;
   border-radius: var(--r-sm);
-  background: var(--surface-1);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   font-size: var(--fs-sm);
   font-family: inherit;
   color: var(--text-1);
   outline: none;
-  transition: border-color var(--dur) var(--ease);
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 
 .input:focus {
   border-color: var(--brand);
+  box-shadow: var(--focus-ring);
 }
 
 .area {
@@ -302,47 +296,65 @@ function goBack(): void {
   line-height: 1.65;
 }
 
+/* 头像：左边大预览可手输，右边一排候选 */
 .avatar-row {
   display: flex;
   gap: var(--sp-3);
-  align-items: flex-start;
+  align-items: center;
 }
 
-.avatar-input {
+/* 提高优先级：触屏下全局会把输入框字号压成 16px，这里需要保留大号表情预览 */
+.input.avatar-input {
   flex: none;
-  width: 64px;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border-radius: 22px;
   text-align: center;
-  font-size: 1.25rem;
+  font-size: 2rem;
+  background: var(--brand-soft);
+  border-color: var(--brand-line);
 }
 
 .avatar-picks {
   flex: 1;
-  display: flex;
-  flex-wrap: wrap;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
 }
 
 .avatar-pick {
-  width: 34px;
-  height: 34px;
+  aspect-ratio: 1;
   display: grid;
   place-items: center;
-  font-size: 1.0625rem;
-  border-radius: var(--r-sm);
-  background: var(--surface-1);
+  font-size: 1.125rem;
+  border-radius: 11px;
+  background: var(--surface-2);
   border: 1px solid var(--border);
+  transition:
+    transform var(--dur-fast) var(--ease),
+    border-color var(--dur) var(--ease);
+}
+
+.avatar-pick:active {
+  transform: scale(0.9);
 }
 
 .avatar-pick.on {
   border-color: var(--brand);
-  background: var(--surface-2);
+  background: var(--brand-soft);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 22%, transparent);
 }
 
 .hint {
   margin: 0 0 var(--sp-3);
+  padding: 10px 12px;
+  border-radius: var(--r-md);
   font-size: var(--fs-xs);
   line-height: 1.65;
-  color: var(--text-3);
+  color: var(--text-2);
+  background: var(--brand-soft);
 }
 
 .error {
@@ -352,38 +364,47 @@ function goBack(): void {
   font-size: var(--fs-xs);
   line-height: 1.6;
   color: var(--danger);
-  background: rgba(255, 107, 129, 0.1);
-  border: 1px solid rgba(255, 107, 129, 0.26);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-line);
+}
+
+.primary-btn,
+.danger-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur) var(--ease);
+}
+
+.primary-btn:active,
+.danger-btn:active {
+  transform: scale(0.985);
 }
 
 .primary-btn {
-  width: 100%;
-  padding: 12px;
-  border-radius: var(--r-md);
-  font-size: var(--fs-sm);
-  font-weight: 600;
   color: var(--brand-on);
-  background: var(--brand-action);
-  transition: transform var(--dur-fast) var(--ease);
-}
-
-.primary-btn:active {
-  transform: scale(0.985);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
 }
 
 .primary-btn:disabled {
   opacity: 0.55;
+  box-shadow: none;
 }
 
 .danger-btn {
-  width: 100%;
-  margin-top: var(--sp-4);
-  padding: 12px;
-  border-radius: var(--r-md);
-  font-size: var(--fs-sm);
+  margin-top: var(--sp-3);
   color: var(--danger);
   background: var(--surface-1);
-  border: 1px solid var(--border);
+  border: 1px solid var(--danger-line);
 }
 
 .danger-btn.armed {

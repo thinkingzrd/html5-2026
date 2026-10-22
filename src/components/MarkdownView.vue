@@ -36,6 +36,11 @@ const blocks = computed(() => renderMarkdownBlocks(props.content, props.streamin
   margin: 0 0 0.7em;
 }
 
+/* 避免段落最后一行只剩一两个字（不支持的浏览器会忽略这条） */
+.markdown :deep(:is(p, li, blockquote)) {
+  text-wrap: pretty;
+}
+
 /* 分块渲染之后，块之间的间距由各元素自身的外边距提供，
    所以不能再把每个 p 的 margin-bottom 抹掉；
    只去掉整篇回答最开头与最末尾的外边距，避免气泡上下留白过多 */
@@ -78,11 +83,22 @@ const blocks = computed(() => renderMarkdownBlocks(props.content, props.streamin
   margin-bottom: 0.28em;
 }
 
+.markdown :deep(strong) {
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.markdown :deep(li::marker) {
+  color: var(--brand);
+  font-weight: 700;
+}
+
 .markdown :deep(code) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.88em;
   padding: 0.14em 0.42em;
   border-radius: 6px;
+  color: color-mix(in srgb, var(--brand) 55%, var(--text-1));
   background: var(--surface-3);
 }
 
@@ -97,6 +113,10 @@ const blocks = computed(() => renderMarkdownBlocks(props.content, props.streamin
 }
 
 .markdown :deep(pre code) {
+  color: var(--text-1);
+}
+
+.markdown :deep(pre code) {
   padding: 0;
   background: none;
   font-size: 0.84em;
@@ -105,9 +125,15 @@ const blocks = computed(() => renderMarkdownBlocks(props.content, props.streamin
 
 .markdown :deep(blockquote) {
   margin: 0 0 0.8em;
-  padding: 0.2em 0 0.2em 0.9em;
+  padding: 0.5em 0.8em 0.5em 0.9em;
   border-left: 3px solid var(--brand);
+  border-radius: 0 10px 10px 0;
   color: var(--text-2);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+}
+
+.markdown :deep(blockquote p:last-child) {
+  margin-bottom: 0;
 }
 
 .markdown :deep(a) {

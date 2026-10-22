@@ -121,7 +121,7 @@ function resultLabel(value: GuessRecord['result']): string {
 <template>
   <div class="page scroll-y guess-page">
     <header class="head safe-x">
-      <RouterLink to="/" class="back" aria-label="返回广场"><AppIcon name="close" /></RouterLink>
+      <RouterLink to="/" class="back" aria-label="返回广场"><AppIcon name="back" /></RouterLink>
       <div>
         <h1 class="title">猜心空间</h1>
         <p class="subtitle">心中藏一个答案，让 AI 循着线索来猜</p>
@@ -130,23 +130,31 @@ function resultLabel(value: GuessRecord['result']): string {
 
     <!-- 未配置接口：没有 Key 一局都跑不起来 -->
     <section v-if="settings.ready && !settings.chatConfigured" class="section safe-x">
-      <RouterLink to="/me" class="warn">尚未配置 API Key，点此前往设置</RouterLink>
+      <RouterLink to="/me" class="warn">
+        <AppIcon name="key" class="warn-icon" />
+        <span>尚未配置 API Key，点此前往设置</span>
+        <AppIcon name="chevron-right" />
+      </RouterLink>
     </section>
 
     <!-- 开局屏（FR-G1） -->
-    <section v-if="guess.restoring" class="section safe-x">正在恢复对局…</section>
+    <section v-if="guess.restoring" class="section safe-x restoring">正在恢复对局…</section>
     <template v-else-if="guess.phase === 'idle'">
       <section class="section safe-x">
         <div class="rules">
-          <div class="mind-emblem" aria-hidden="true"><AppIcon name="sparkle" /></div>
+          <div class="mind-orb" aria-hidden="true">
+            <span class="orb-ring" />
+            <span class="orb-ring late" />
+            <span class="orb-core"><AppIcon name="sparkle" /></span>
+          </div>
           <p class="mind-label">大模型驱动 · 最多 {{ MAX_ROUNDS }} 轮</p>
           <p class="rules-lead">心里想好一个东西，先别告诉我。</p>
           <ul class="rules-list">
-            <li>选一个人物、动物、物品或概念。</li>
-            <li>根据心中的答案，回答「是」「否」或「不确定」。</li>
+            <li><span class="rule-no">1</span>选一个人物、动物、物品或概念。</li>
+            <li><span class="rule-no">2</span>根据心中的答案，回答「是」「否」或「不确定」。</li>
           </ul>
           <details class="game-details">
-            <summary>了解猜心原理与进度保存</summary>
+            <summary>了解猜心原理与进度保存 <AppIcon name="chevron" class="details-chevron" /></summary>
             <p class="rules-note">进度自动保存在本机，刷新后可以继续。不会写进长期记忆或对话列表。</p>
             <p class="rules-note">模型根据回答逐步缩小范围，并非读取想法；把握数值是模型自评，最终由你确认是否猜中。</p>
           </details>
@@ -161,7 +169,9 @@ function resultLabel(value: GuessRecord['result']): string {
     <template v-else-if="guess.phase !== 'guessed' && guess.phase !== 'finished'">
       <section class="section safe-x">
         <div class="round-row">
-          <span class="round">第 {{ guess.round }} 轮</span>
+          <span class="round"
+            >第 <strong>{{ guess.round }}</strong> 轮</span
+          >
           <span class="round-max">最多 {{ MAX_ROUNDS }} 轮</span>
         </div>
         <div
@@ -177,6 +187,7 @@ function resultLabel(value: GuessRecord['result']): string {
 
         <!-- 请求失败：整局进度保留，只把这一轮标成失败 -->
         <div v-if="guess.phase === 'error'" class="failure">
+          <span class="failure-icon" aria-hidden="true"><AppIcon name="alert" /></span>
           <p class="failure-title">线索已保留，稍后继续</p>
           <p class="failure-desc">{{ guess.failureText }}</p>
           <p class="failure-note">已经问过的 {{ guess.turns.length }} 轮都还在，点下面的按钮接着玩，不用从头开始。</p>
@@ -188,7 +199,11 @@ function resultLabel(value: GuessRecord['result']): string {
         <template v-else>
           <!-- :key 绑在轮数上：换一轮就重建卡片，入场动画才会重新播一次 -->
           <div :key="guess.round" class="question-card" :class="{ processing: asking }" aria-live="polite">
-            <div class="mind-emblem compact" aria-hidden="true"><AppIcon name="sparkle" /></div>
+            <div class="mind-orb compact" aria-hidden="true">
+              <span class="orb-ring" />
+              <span class="orb-ring late" />
+              <span class="orb-core"><AppIcon name="sparkle" /></span>
+            </div>
             <p class="mind-label">
               {{ guess.candidateAnswer ? '等待你确认答案' : asking ? '正在整理你的线索' : '根据心中的答案选择' }}
             </p>
@@ -198,13 +213,13 @@ function resultLabel(value: GuessRecord['result']): string {
 
           <!-- 候选答案：只有用户点了「猜对了」才算猜中 -->
           <div v-if="guess.candidateAnswer" class="candidate">
-            <p class="reveal-label">我的猜测</p>
+            <p class="reveal-label"><AppIcon name="bolt" /> 我的猜测</p>
             <p class="candidate-name">{{ guess.candidateAnswer }}</p>
             <p class="candidate-text">{{ candidateTitle }}</p>
             <p class="candidate-hint">{{ candidateHint }}</p>
             <div class="candidate-actions">
-              <button class="answer yes" @click="guess.confirmCandidate(true)">猜对了</button>
-              <button class="answer" @click="guess.confirmCandidate(false)">不是</button>
+              <button class="answer yes" @click="guess.confirmCandidate(true)"><AppIcon name="check" />猜对了</button>
+              <button class="answer" @click="guess.confirmCandidate(false)"><AppIcon name="close" />不是</button>
             </div>
           </div>
 
@@ -212,27 +227,34 @@ function resultLabel(value: GuessRecord['result']): string {
           <p v-else-if="confidenceHint && !guess.candidateAnswer" class="status">{{ confidenceHint }}</p>
 
           <div v-if="!guess.awaitingConfirm" class="answers">
-            <button class="answer yes" :disabled="asking" @click="answer('yes')">是的</button>
-            <button class="answer" :disabled="asking" @click="answer('no')">不是</button>
-            <button class="answer" :disabled="asking" @click="answer('unsure')">不确定</button>
+            <button class="answer yes" :disabled="asking" @click="answer('yes')"><AppIcon name="check" />是的</button>
+            <button class="answer" :disabled="asking" @click="answer('no')"><AppIcon name="close" />不是</button>
+            <button class="answer" :disabled="asking" @click="answer('unsure')"><AppIcon name="help" />不确定</button>
           </div>
         </template>
 
-        <button v-if="asking" class="giveup" @click="guess.cancelRound()">暂停等待</button>
-        <button v-if="guess.canUndo" class="giveup" @click="guess.undoAnswer()">撤回上个回答</button>
-        <button class="giveup" @click="guess.abandon()"><AppIcon name="stop" /> 放弃这一局</button>
+        <div class="game-actions">
+          <button v-if="asking" class="giveup" @click="guess.cancelRound()"><AppIcon name="stop" />暂停等待</button>
+          <button v-if="guess.canUndo" class="giveup" @click="guess.undoAnswer()">
+            <AppIcon name="history" />撤回上个回答
+          </button>
+          <button class="giveup danger" @click="guess.abandon()"><AppIcon name="close" />放弃这一局</button>
+        </div>
       </section>
 
       <!-- 已问过的问题：默认折叠，需要回看时再展开 -->
       <section v-if="guess.turns.length" class="section safe-x">
         <button class="asked-toggle" @click="toggleAsked">
-          <span>已问过的问题（{{ guess.turns.length }}）</span>
+          <span
+            >已问过的问题<em>{{ guess.turns.length }}</em></span
+          >
           <AppIcon name="chevron" :class="['chevron', { open: showAsked }]" />
         </button>
         <ol v-if="showAsked" class="asked-list">
           <li v-for="(turn, index) in guess.turns" :key="index" class="asked-item">
+            <span class="asked-no">{{ index + 1 }}</span>
             <span class="asked-q">{{ turn.question }}</span>
-            <span class="asked-a" :class="{ pending: !turn.answer }">
+            <span class="asked-a" :class="[turn.answer || 'pending']">
               {{ turn.answer ? answerLabel(turn.answer) : '待回答' }}
             </span>
           </li>
@@ -267,13 +289,18 @@ function resultLabel(value: GuessRecord['result']): string {
         </button>
 
         <button class="asked-toggle" @click="toggleAsked">
-          <span>这一局的问答（{{ guess.turns.length }}）</span>
+          <span
+            >这一局的问答<em>{{ guess.turns.length }}</em></span
+          >
           <AppIcon name="chevron" :class="['chevron', { open: showAsked }]" />
         </button>
         <ol v-if="showAsked" class="asked-list">
           <li v-for="(turn, index) in guess.turns" :key="index" class="asked-item">
+            <span class="asked-no">{{ index + 1 }}</span>
             <span class="asked-q">{{ turn.question }}</span>
-            <span class="asked-a">{{ turn.answer ? answerLabel(turn.answer) : '未回答' }}</span>
+            <span class="asked-a" :class="[turn.answer || 'pending']">{{
+              turn.answer ? answerLabel(turn.answer) : '未回答'
+            }}</span>
           </li>
         </ol>
       </section>
@@ -282,7 +309,7 @@ function resultLabel(value: GuessRecord['result']): string {
     <!-- 历史对局（FR-G5） -->
     <section class="section safe-x">
       <div class="section-head">
-        <h2 class="section-title">历史对局</h2>
+        <h2 class="section-title"><AppIcon name="history" /> 历史对局</h2>
         <button v-if="guess.hasHistory" class="clear" @click="guess.clearHistory()">清空</button>
       </div>
 
@@ -307,8 +334,11 @@ function resultLabel(value: GuessRecord['result']): string {
 
           <ol v-if="expandedId === record.id" class="asked-list">
             <li v-for="(turn, index) in recordTurns(record)" :key="index" class="asked-item">
+              <span class="asked-no">{{ index + 1 }}</span>
               <span class="asked-q">{{ turn.question }}</span>
-              <span class="asked-a">{{ turn.answer ? answerLabel(turn.answer) : '未回答' }}</span>
+              <span class="asked-a" :class="[turn.answer || 'pending']">{{
+                turn.answer ? answerLabel(turn.answer) : '未回答'
+              }}</span>
             </li>
           </ol>
         </article>
@@ -323,112 +353,9 @@ function resultLabel(value: GuessRecord['result']): string {
 </template>
 
 <style scoped>
-.eyebrow {
-  margin: 0 0 4px;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  color: var(--brand);
-}
-.mind-emblem {
-  display: grid;
-  place-items: center;
-  width: 86px;
-  height: 86px;
-  margin: 0 auto 18px;
-  font-size: 36px;
-  color: var(--brand);
-  border: 1px solid var(--border);
-  border-radius: 28px;
-  background: radial-gradient(circle, var(--bg-glow), var(--surface-1));
-  box-shadow: 0 0 30px color-mix(in srgb, var(--brand) 9%, transparent);
-}
-.mind-emblem.compact {
-  width: 64px;
-  height: 64px;
-  font-size: 28px;
-  border-radius: 22px;
-}
-.mind-label {
-  margin: 0 0 14px;
-  color: var(--brand);
-  font-size: var(--fs-xs);
-  text-align: center;
-}
-.game-details {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-  color: var(--text-3);
-  font-size: var(--fs-xs);
-}
-.game-details summary {
-  padding: 8px 0;
-  cursor: pointer;
-}
-.round-progress {
-  height: 4px;
-  background: var(--surface-2);
-  border-radius: 4px;
-  margin: 12px 0 22px;
-  overflow: hidden;
-}
-.round-progress span {
-  display: block;
-  height: 100%;
-  background: var(--brand);
-  transition: width var(--dur) var(--ease);
-}
-:global(html[data-theme='light'] .guess-page .rules) {
-  background: var(--surface-1);
-  border-top: 3px solid var(--brand);
-}
 .page {
   height: 100%;
   padding-top: var(--safe-top);
-}
-
-/* ---- 顶栏 ---- */
-.head {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-5) var(--sp-5) var(--sp-3);
-}
-
-.back {
-  flex: none;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-full);
-  font-size: 1.0625rem;
-  color: var(--text-2);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-}
-
-.title {
-  margin: 0;
-  font-size: var(--fs-xl);
-  font-weight: 700;
-}
-
-.subtitle {
-  margin: 6px 0 0;
-  font-size: var(--fs-sm);
-  color: var(--text-2);
-}
-
-.tag {
-  margin-left: auto;
-  flex: none;
-  padding: 3px 8px;
-  border-radius: var(--r-full);
-  font-size: 0.625rem;
-  letter-spacing: 0.04em;
-  color: var(--text-3);
-  background: var(--surface-2);
 }
 
 .section {
@@ -440,57 +367,220 @@ function resultLabel(value: GuessRecord['result']): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: var(--sp-3);
 }
 
 .section-title {
-  margin: 0 0 var(--sp-3);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--text-2);
-  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.section-title .icon {
+  color: var(--brand);
 }
 
 .clear {
-  margin-bottom: var(--sp-3);
+  padding: 5px 11px;
+  border-radius: var(--r-full);
   font-size: var(--fs-xs);
-  color: var(--text-3);
+  color: var(--text-2);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+}
+
+.restoring {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
 }
 
 .warn {
-  display: block;
-  text-align: center;
-  padding: 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
   border-radius: var(--r-md);
   font-size: var(--fs-sm);
+  color: var(--text-1);
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-line);
+}
+
+.warn span {
+  flex: 1;
+}
+
+.warn-icon {
   color: var(--warning);
-  background: rgba(255, 196, 107, 0.1);
-  border: 1px solid rgba(255, 196, 107, 0.26);
+  font-size: 1.05rem;
+}
+
+/* ---- 心灵球：渐变核心 + 两圈向外扩散的光环 ---- */
+.mind-orb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 124px;
+  height: 124px;
+  margin: 0 auto 14px;
+}
+
+.orb-core {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 26px;
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  font-size: 34px;
+  box-shadow:
+    var(--shadow-brand),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.orb-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--brand) 50%, transparent);
+  animation: orb-pulse 2.8s var(--ease) infinite;
+}
+
+.orb-ring.late {
+  animation-delay: 1.4s;
+}
+
+@keyframes orb-pulse {
+  from {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+
+.mind-orb.compact {
+  width: 84px;
+  height: 84px;
+  margin-bottom: 12px;
+}
+
+.mind-orb.compact .orb-core {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  font-size: 24px;
+}
+
+/* 对局中只有在模型思考时光环才扩散，等用户回答时保持安静 */
+.question-card:not(.processing) .orb-ring {
+  animation: none;
+  opacity: 0;
+}
+
+.mind-label {
+  margin: 0 0 12px;
+  color: var(--brand);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
 }
 
 /* ---- 开局屏 ---- */
 .rules {
-  padding: 24px 20px;
-  border-radius: var(--r-lg);
-  background: linear-gradient(145deg, var(--bg-glow), var(--surface-1) 65%);
-  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  padding: 26px 20px 20px;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--brand-line);
+  background:
+    radial-gradient(100% 70% at 50% 0%, color-mix(in srgb, var(--brand) 18%, transparent) 0%, transparent 70%),
+    var(--surface-1);
+  box-shadow: var(--tech-shadow);
 }
 
 .rules-lead {
   margin: 0;
   font-size: var(--fs-lg);
-  font-weight: 680;
+  font-weight: 750;
+  text-align: center;
+  letter-spacing: -0.01em;
 }
 
 .rules-list {
-  margin: var(--sp-3) 0 0;
-  padding-left: 1.125rem;
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
   font-size: var(--fs-sm);
-  line-height: 1.9;
+  line-height: 1.6;
   color: var(--text-2);
 }
 
+.rules-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+
+.rule-no {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 50%;
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.game-details {
+  margin-top: 14px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+
+.game-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 0 2px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.game-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.details-chevron {
+  transition: transform var(--dur) var(--ease);
+}
+
+.game-details[open] .details-chevron {
+  transform: rotate(180deg);
+}
+
 .rules-note {
-  margin: var(--sp-3) 0 0;
+  margin: var(--sp-2) 0 0;
   font-size: var(--fs-xs);
   line-height: 1.7;
   color: var(--text-3);
@@ -506,30 +596,82 @@ function resultLabel(value: GuessRecord['result']): string {
 
 .round {
   font-size: var(--fs-md);
-  font-weight: 680;
+  font-weight: 650;
+  color: var(--text-2);
+}
+
+.round strong {
+  color: var(--text-1);
+  font-size: 1.375rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .round-max {
+  padding: 3px 9px;
+  border-radius: var(--r-full);
   font-size: var(--fs-xs);
-  color: var(--text-3);
+  color: var(--text-2);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+}
+
+.round-progress {
+  height: 6px;
+  margin: 10px 0 18px;
+  overflow: hidden;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+}
+
+.round-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--grad-brand);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--brand) 50%, transparent);
+  transition: width var(--dur-slow) var(--ease);
 }
 
 .question-card {
   position: relative;
-  padding: var(--sp-5) var(--sp-4) 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 216px;
+  padding: 24px 20px 28px;
   text-align: center;
-  box-shadow: var(--tech-shadow);
-  border-radius: var(--r-lg);
-  background: var(--surface-1);
+  border-radius: var(--r-xl);
   border: 1px solid var(--border);
+  background:
+    radial-gradient(90% 60% at 50% 0%, color-mix(in srgb, var(--brand) 14%, transparent) 0%, transparent 72%),
+    var(--surface-1);
+  box-shadow: var(--tech-shadow);
   overflow: hidden;
-  animation: card-in var(--dur) var(--ease);
+  animation: card-in var(--dur-slow) var(--ease);
+}
+
+/* 顶部居中一段渐变短条，避开大圆角，不会被裁成两头尖 */
+.question-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 34%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  transform: translateX(-50%);
+  background: var(--grad-brand);
+}
+
+.question-card.processing {
+  border-color: var(--brand-line);
 }
 
 @keyframes card-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -537,20 +679,15 @@ function resultLabel(value: GuessRecord['result']): string {
   }
 }
 
-.question-card::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  height: 2px;
-  background: linear-gradient(90deg, var(--brand), var(--brand-2));
-}
-
 .question {
   margin: 0;
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  line-height: 1.6;
   min-height: 1.6em;
+  font-size: clamp(21px, 5.6vw, 25px);
+  font-weight: 700;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .question.thinking {
@@ -563,9 +700,9 @@ function resultLabel(value: GuessRecord['result']): string {
   display: inline-block;
   width: 2px;
   height: 1em;
-  margin-left: 3px;
+  margin-right: 6px;
   vertical-align: -0.12em;
-  background: var(--brand-action);
+  background: var(--brand);
   animation: blink 1s steps(2, start) infinite;
 }
 
@@ -576,25 +713,54 @@ function resultLabel(value: GuessRecord['result']): string {
 }
 
 .status {
-  margin: var(--sp-2) 0 0;
+  margin: var(--sp-3) 0 0;
   font-size: var(--fs-xs);
+  line-height: 1.6;
   color: var(--text-3);
+  text-align: center;
 }
 
 /* ---- 候选答案确认 ---- */
 .candidate {
   margin-top: var(--sp-3);
-  padding: var(--sp-4);
-  border-radius: var(--r-lg);
+  padding: 22px 16px 16px;
+  text-align: center;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--brand-line);
+  background:
+    radial-gradient(100% 80% at 50% 0%, color-mix(in srgb, var(--brand) 22%, transparent) 0%, transparent 70%),
+    var(--surface-1);
+  box-shadow: var(--shadow-brand);
+  animation: card-in var(--dur-slow) var(--ease-spring);
+}
+
+.reveal-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 4px 11px;
+  border-radius: var(--r-full);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--brand);
   background: var(--brand-soft);
-  border: 1px solid var(--border);
+}
+
+.candidate-name {
+  margin: 12px 0 8px;
+  font-size: clamp(26px, 8vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  overflow-wrap: anywhere;
 }
 
 .candidate-text {
   margin: 0;
-  font-size: var(--fs-md);
-  font-weight: 660;
+  font-size: var(--fs-sm);
   line-height: 1.6;
+  color: var(--text-2);
 }
 
 .candidate-hint {
@@ -608,27 +774,129 @@ function resultLabel(value: GuessRecord['result']): string {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-2);
-  margin-top: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+/* ---- 回答按钮 ---- */
+.answers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: var(--sp-4);
+}
+
+.answer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 15px 4px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
+  font-weight: 650;
+  color: var(--text-1);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  transition:
+    transform var(--dur-fast) var(--ease),
+    background var(--dur) var(--ease),
+    opacity var(--dur) var(--ease);
+}
+
+.answer .icon {
+  flex: none;
+  font-size: 1.05rem;
+  color: var(--text-3);
+}
+
+.answer:active {
+  transform: scale(0.95);
+  background: var(--surface-2);
 }
 
 .answer.yes {
   color: var(--brand-on);
-  background: var(--brand-action);
+  background: var(--grad-brand);
   border-color: transparent;
+  box-shadow: var(--shadow-brand);
+}
+
+.answer.yes .icon {
+  color: inherit;
+}
+
+.answer.yes:active {
+  filter: brightness(0.95);
+}
+
+.answer:disabled {
+  opacity: 0.4;
+}
+
+/* ---- 次要操作：暂停 / 撤回 / 放弃，并排成一行 ---- */
+.game-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+
+.giveup {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: max-content;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: var(--r-full);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  transition:
+    color var(--dur) var(--ease),
+    background var(--dur) var(--ease);
+}
+
+.giveup:active {
+  background: var(--surface-2);
+}
+
+.giveup.danger:active {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
 }
 
 /* ---- 请求失败：进度保留，等用户重试 ---- */
 .failure {
-  padding: var(--sp-5) var(--sp-4);
-  border-radius: var(--r-lg);
+  padding: 22px 18px 18px;
+  text-align: center;
+  border-radius: var(--r-xl);
   background: var(--surface-1);
-  border: 1px solid var(--border);
+  border: 1px solid var(--warning-line);
+  box-shadow: var(--card-shadow);
+}
+
+.failure-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  color: var(--warning);
+  background: var(--warning-soft);
+  font-size: 1.35rem;
 }
 
 .failure-title {
-  margin: 0;
+  margin: 12px 0 0;
   font-size: var(--fs-md);
-  font-weight: 660;
+  font-weight: 700;
 }
 
 .failure-desc {
@@ -646,79 +914,40 @@ function resultLabel(value: GuessRecord['result']): string {
   color: var(--text-3);
 }
 
-.answers {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-2);
-  margin-top: var(--sp-4);
-}
-
-.answer {
-  padding: 15px 0;
-  border-radius: var(--r-md);
-  font-size: var(--fs-md);
-  font-weight: 620;
-  color: var(--text-1);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  transition:
-    transform var(--dur-fast) var(--ease),
-    background var(--dur) var(--ease);
-}
-
-.answer:active {
-  transform: scale(0.96);
-  background: var(--surface-3);
-}
-.answer.yes:active {
-  background: var(--brand-action);
-  filter: brightness(0.94);
-}
-
-.answer:disabled {
-  opacity: 0.4;
-}
-
-.giveup {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: var(--sp-3);
-  padding: 11px;
-  border-radius: var(--r-md);
-  font-size: var(--fs-xs);
-  color: var(--text-3);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-}
-
-.giveup:active {
-  color: var(--danger);
-  background: rgba(255, 107, 129, 0.1);
-}
-
 /* ---- 已问过的问题 ---- */
 .asked-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 11px var(--sp-4);
+  margin-top: var(--sp-3);
+  padding: 13px var(--sp-4);
   border-radius: var(--r-md);
   font-size: var(--fs-sm);
-  color: var(--text-2);
+  color: var(--text-1);
   background: var(--surface-1);
   border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
 }
 
-.asked-toggle + .asked-list {
-  margin-top: var(--sp-2);
+.section > .asked-toggle:first-child {
+  margin-top: 0;
+}
+
+.asked-toggle em {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: var(--r-full);
+  font-style: normal;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--brand-soft);
 }
 
 .chevron {
   font-size: 1rem;
+  color: var(--text-3);
   transition: transform var(--dur) var(--ease);
 }
 
@@ -728,7 +957,7 @@ function resultLabel(value: GuessRecord['result']): string {
 
 .asked-list {
   margin: var(--sp-2) 0 0;
-  padding: var(--sp-2) var(--sp-3);
+  padding: 4px var(--sp-3);
   list-style: none;
   border-radius: var(--r-md);
   background: var(--surface-1);
@@ -738,8 +967,8 @@ function resultLabel(value: GuessRecord['result']): string {
 .asked-item {
   display: flex;
   align-items: flex-start;
-  gap: var(--sp-3);
-  padding: 8px 0;
+  gap: 10px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border);
   font-size: var(--fs-xs);
   line-height: 1.6;
@@ -747,6 +976,19 @@ function resultLabel(value: GuessRecord['result']): string {
 
 .asked-item:last-child {
   border-bottom: none;
+}
+
+.asked-no {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-3);
+  background: var(--surface-2);
 }
 
 .asked-q {
@@ -757,10 +999,26 @@ function resultLabel(value: GuessRecord['result']): string {
 
 .asked-a {
   flex: none;
-  padding: 2px 8px;
+  padding: 2px 9px;
   border-radius: var(--r-full);
+  font-weight: 600;
   color: var(--brand);
   background: var(--brand-soft);
+}
+
+.asked-a.yes {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.asked-a.no {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.asked-a.unsure {
+  color: var(--warning);
+  background: var(--warning-soft);
 }
 
 .asked-a.pending {
@@ -770,43 +1028,70 @@ function resultLabel(value: GuessRecord['result']): string {
 
 /* ---- 结算屏 ---- */
 .result {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: var(--sp-6) var(--sp-4);
-  border-radius: var(--r-lg);
+  padding: 30px 18px 24px;
+  border-radius: var(--r-xl);
   background: var(--surface-1);
   border: 1px solid var(--border);
+  box-shadow: var(--tech-shadow);
+  animation: card-in 300ms var(--ease);
 }
 
 .result.win {
-  border-color: rgba(79, 209, 165, 0.36);
+  border-color: var(--brand-line);
+  background:
+    radial-gradient(110% 70% at 50% 0%, color-mix(in srgb, var(--brand) 24%, transparent) 0%, transparent 70%),
+    var(--surface-1);
 }
 
 .result-icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
   font-size: 2rem;
   line-height: 1;
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.result.win .result-icon {
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
+  animation: answer-in var(--dur-slow) var(--ease-spring);
 }
 
 .result-title {
-  margin: var(--sp-3) 0 0;
+  margin: var(--sp-4) 0 0;
   font-size: var(--fs-lg);
-  font-weight: 680;
+  font-weight: 750;
 }
 
 .result-answer {
   margin: var(--sp-2) 0 0;
-  font-size: var(--fs-xl);
-  font-weight: 700;
-  color: var(--success);
-  animation: answer-in var(--dur-slow) var(--ease);
+  max-width: 100%;
+  font-size: clamp(28px, 8vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: var(--grad-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  overflow-wrap: anywhere;
+  animation: answer-in var(--dur-slow) var(--ease-spring);
 }
 
 @keyframes answer-in {
   from {
     opacity: 0;
-    transform: scale(0.88);
+    transform: scale(0.85);
   }
   to {
     opacity: 1;
@@ -823,8 +1108,11 @@ function resultLabel(value: GuessRecord['result']): string {
 }
 
 .stats {
-  display: flex;
-  gap: var(--sp-6);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-2);
+  width: 100%;
+  max-width: 300px;
   margin-top: var(--sp-4);
 }
 
@@ -833,15 +1121,19 @@ function resultLabel(value: GuessRecord['result']): string {
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  padding: 10px 6px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--surface-2) 80%, transparent);
 }
 
 .stats strong {
   font-size: var(--fs-lg);
-  font-weight: 680;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
 }
 
 .stats small {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   color: var(--text-3);
   letter-spacing: 0.06em;
 }
@@ -853,12 +1145,13 @@ function resultLabel(value: GuessRecord['result']): string {
   gap: var(--sp-2);
   width: 100%;
   margin-top: var(--sp-4);
-  padding: 14px;
+  padding: 15px;
   border-radius: var(--r-md);
   font-size: var(--fs-md);
-  font-weight: 620;
+  font-weight: 700;
   color: var(--brand-on);
-  background: var(--brand-action);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
   transition:
     transform var(--dur-fast) var(--ease),
     opacity var(--dur) var(--ease);
@@ -870,6 +1163,7 @@ function resultLabel(value: GuessRecord['result']): string {
 
 .start-btn:disabled {
   opacity: 0.4;
+  box-shadow: none;
 }
 
 /* ---- 历史记录 ---- */
@@ -883,6 +1177,7 @@ function resultLabel(value: GuessRecord['result']): string {
   border-radius: var(--r-md);
   background: var(--surface-1);
   border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
 }
 
@@ -891,15 +1186,16 @@ function resultLabel(value: GuessRecord['result']): string {
   align-items: center;
   gap: var(--sp-3);
   width: 100%;
-  padding: var(--sp-3) var(--sp-4);
+  padding: 13px var(--sp-4);
   text-align: left;
 }
 
 .record-result {
   flex: none;
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: var(--r-full);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--text-3);
   background: var(--surface-2);
@@ -907,12 +1203,12 @@ function resultLabel(value: GuessRecord['result']): string {
 
 .record-result.guessed {
   color: var(--success);
-  background: rgba(79, 209, 165, 0.14);
+  background: var(--success-soft);
 }
 
 .record-result.gaveup {
   color: var(--warning);
-  background: rgba(255, 196, 107, 0.14);
+  background: var(--warning-soft);
 }
 
 .record-body {
@@ -925,32 +1221,37 @@ function resultLabel(value: GuessRecord['result']): string {
 
 .record-title {
   font-size: var(--fs-sm);
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .record-meta {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   color: var(--text-3);
 }
 
 .record .asked-list {
   margin: 0 var(--sp-3) var(--sp-3);
+  background: var(--surface-2);
 }
 
 /* ---- 提示 ---- */
-.warning {
-  margin: 0 0 var(--sp-2);
+.warning,
+.game-hint {
+  padding-inline: max(20px, var(--safe-left)) max(20px, var(--safe-right));
   font-size: var(--fs-xs);
   line-height: 1.6;
+}
+
+.warning {
+  margin: 0 0 var(--sp-2);
   color: var(--warning);
 }
 
 .game-hint {
   margin: 0;
-  font-size: var(--fs-xs);
-  line-height: 1.6;
   color: var(--text-3);
 }
 
@@ -958,84 +1259,24 @@ function resultLabel(value: GuessRecord['result']): string {
   height: var(--sp-6);
 }
 
-/* Focus the question and give confirmed answers a distinct reveal. */
-.question-card {
-  padding: 24px 20px 28px;
-  min-height: 210px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.question {
-  font-size: clamp(21px, 5.6vw, 25px);
-  overflow-wrap: anywhere;
-}
-.question-card .mind-emblem.compact {
-  width: 46px;
-  height: 46px;
-  font-size: 22px;
-  margin-bottom: 12px;
-  border-radius: 16px;
-}
-.processing .mind-emblem {
-  animation: thinking-glow 1.8s ease-in-out infinite alternate;
-}
-@keyframes thinking-glow {
-  to {
-    box-shadow: 0 0 28px var(--brand-soft);
-    border-color: var(--brand);
+@media (max-width: 350px) {
+  .answers {
+    gap: 7px;
+  }
+  .answer {
+    gap: 4px;
+    font-size: var(--fs-sm);
+  }
+  .answer .icon {
+    font-size: 0.95rem;
   }
 }
-.candidate {
-  text-align: center;
-  padding: 22px 16px;
-  background: linear-gradient(145deg, var(--brand-soft), var(--surface-1));
-}
-.reveal-label {
-  margin: 0;
-  font-size: var(--fs-xs);
-  color: var(--brand);
-}
-.candidate-name {
-  margin: 10px 0;
-  font-size: 28px;
-  font-weight: 750;
-  color: var(--text-1);
-  overflow-wrap: anywhere;
-}
-.candidate-text {
-  font-size: var(--fs-xs);
-  font-weight: 400;
-  color: var(--text-2);
-}
-.result {
-  position: relative;
-  overflow: hidden;
-  animation: card-in 300ms var(--ease);
-}
-.result.win {
-  background: radial-gradient(ellipse at top, var(--brand-soft), var(--surface-1) 75%);
-  border-color: var(--brand);
-  box-shadow: var(--tech-shadow);
-}
-.result-icon {
-  display: grid;
-  place-items: center;
-  width: 70px;
-  height: 70px;
-  border-radius: 24px;
-  background: var(--brand-soft);
-  color: var(--brand);
-}
-.result-answer {
-  font-size: clamp(28px, 8vw, 36px);
-  overflow-wrap: anywhere;
-  max-width: 100%;
-}
+
 @media (prefers-reduced-motion: reduce) {
-  .processing .mind-emblem,
+  .orb-ring,
   .result,
-  .question-card {
+  .question-card,
+  .candidate {
     animation: none;
   }
 }

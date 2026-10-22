@@ -84,6 +84,20 @@ onMounted(async () => {
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+  background-color: var(--bg);
+}
+
+/*
+ * 背景光晕挂在外壳上而不是各页面里：页面内部滚动时光晕保持不动，
+ * 切页时也不会跟着淡入淡出，整个应用像一块连续的底板。
+ */
+.shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--bg-ambient);
 }
 
 .main {

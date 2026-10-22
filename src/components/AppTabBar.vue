@@ -18,7 +18,7 @@ interface TabItem {
 const tabs: TabItem[] = [
   { to: '/', label: '广场', icon: 'plaza' },
   { to: '/guess', label: '猜心', icon: 'sparkle' },
-  { to: '/predict', label: '预测', icon: 'sliders' },
+  { to: '/predict', label: '预测', icon: 'trend' },
   { to: '/library', label: '问知', icon: 'library' },
   { to: '/me', label: '我的', icon: 'me' }
 ]
@@ -29,7 +29,7 @@ const route = useRoute()
 <template>
   <nav class="tabbar safe-x" aria-label="主导航">
     <RouterLink v-for="tab in tabs" :key="tab.to" :to="tab.to" class="tab" :class="{ active: route.path === tab.to }">
-      <AppIcon :name="tab.icon" class="tab-icon" />
+      <span class="tab-pill"><AppIcon :name="tab.icon" class="tab-icon" /></span>
       <span class="tab-label">{{ tab.label }}</span>
     </RouterLink>
   </nav>
@@ -44,9 +44,12 @@ const route = useRoute()
   align-items: stretch;
   min-height: calc(var(--tabbar-h) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
-  padding-inline: max(8px, var(--safe-left)) max(8px, var(--safe-right));
-  background: var(--surface-1);
+  padding-inline: max(6px, var(--safe-left)) max(6px, var(--safe-right));
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
   border-top: 1px solid var(--border);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.06);
 }
 
 .tab {
@@ -55,36 +58,52 @@ const route = useRoute()
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 3px;
   min-width: 0;
   color: var(--text-2);
+  transition: color var(--dur) var(--ease);
+}
+
+/* 选中项的图标落在一枚胶囊里，比单纯变色更容易一眼认出当前页 */
+.tab-pill {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 30px;
+  border-radius: var(--r-full);
   transition:
     background var(--dur) var(--ease),
-    color var(--dur) var(--ease),
     transform var(--dur-fast) var(--ease);
 }
 
-.tab:active {
-  transform: scale(0.94);
-}
-
-.tab.active {
-  color: var(--brand);
-  font-weight: 600;
+.tab:active .tab-pill {
+  transform: scale(0.9);
 }
 
 .tab-icon {
   font-size: 1.3125rem;
+  transition: transform var(--dur-slow) var(--ease-spring);
 }
+
+.tab.active {
+  color: var(--brand);
+}
+
+.tab.active .tab-pill {
+  background: color-mix(in srgb, var(--brand) 17%, transparent);
+}
+
 .tab.active .tab-icon {
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--brand) 25%, transparent));
+  transform: scale(1.08);
 }
 
 .tab-label {
-  font-size: var(--fs-xs);
-  letter-spacing: 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
+
 .tab.active .tab-label {
-  font-weight: 600;
+  font-weight: 700;
 }
 </style>

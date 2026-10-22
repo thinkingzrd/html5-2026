@@ -129,13 +129,18 @@ async function disablePin(): Promise<void> {
         <h1 class="title">我的</h1>
       </div>
       <Transition name="fade">
-        <span v-if="saved" class="saved">已保存</span>
+        <span v-if="saved" class="saved"><AppIcon name="check" />已保存</span>
       </Transition>
     </header>
 
     <!-- 大模型接口 -->
     <section class="section safe-x">
-      <h2 class="section-title">APIkey</h2>
+      <h2 class="section-title">
+        <span class="title-icon"><AppIcon name="key" /></span>APIkey
+        <span class="conn-state" :class="{ ready: settings.chatConfigured }">{{
+          settings.chatConfigured ? '已配置' : '待配置'
+        }}</span>
+      </h2>
 
       <div class="chips">
         <button
@@ -169,7 +174,9 @@ async function disablePin(): Promise<void> {
 
       <details class="advanced-config" :open="settings.api.providerId === 'custom'">
         <summary>
-          接口地址与模型 <span>{{ settings.api.chat.model || '待填写' }}</span>
+          <span class="summary-main">接口地址与模型</span>
+          <span class="summary-state">{{ settings.api.chat.model || '待填写' }}</span>
+          <AppIcon name="chevron" class="fold-chevron" />
         </summary>
         <p class="hint">常用服务商自动填写；自定义地址填到 /v1，不需要加 /chat/completions。</p>
         <label class="field">
@@ -204,10 +211,10 @@ async function disablePin(): Promise<void> {
         :href="selectedPreset.docsUrl"
         target="_blank"
         rel="noopener noreferrer"
-        >获取 {{ selectedPreset.name }} API Key ↗</a
-      >
+        >获取 {{ selectedPreset.name }} API Key <AppIcon name="arrow-up-right"
+      /></a>
       <button class="primary-btn" :disabled="testing === 'chat' || !settings.chatConfigured" @click="runChatTest">
-        {{ testing === 'chat' ? '测试中…' : '测试连接' }}
+        <AppIcon name="bolt" />{{ testing === 'chat' ? '测试中…' : '测试连接' }}
       </button>
 
       <Transition name="fade">
@@ -220,7 +227,9 @@ async function disablePin(): Promise<void> {
 
     <!-- 外观 -->
     <section class="section safe-x">
-      <h2 class="section-title">外观</h2>
+      <h2 class="section-title">
+        <span class="title-icon"><AppIcon name="palette" /></span>外观
+      </h2>
       <div class="style-choice" role="group" aria-label="界面风格">
         <button
           v-for="item in VISUAL_THEMES"
@@ -230,29 +239,36 @@ async function disablePin(): Promise<void> {
           :aria-pressed="visualStyle === item.id"
           @click="setVisualStyle(item.id)"
         >
+          <!-- 迷你界面预览：主题底色上画一枚强调色图标和两条文字线 -->
           <span
             class="style-swatch"
-            :style="{ background: `linear-gradient(90deg, ${item.background} 60%, ${item.accent} 60%)` }"
+            :style="{ '--sw-bg': item.background, '--sw-accent': item.accent }"
             aria-hidden="true"
-          />
+            ><i /><i /><i
+          /></span>
           <strong>{{ item.name }}</strong>
+          <span v-if="visualStyle === item.id" class="style-check" aria-hidden="true"><AppIcon name="check" /></span>
         </button>
       </div>
     </section>
 
     <!-- 数据与记忆 -->
     <section class="section safe-x">
-      <h2 class="section-title">我的管理</h2>
+      <h2 class="section-title">
+        <span class="title-icon"><AppIcon name="sparkle" /></span>我的管理
+      </h2>
       <RouterLink to="/memories" class="row-btn">
-        <span class="row-icon"><AppIcon name="sparkle" /></span>
+        <span class="row-icon"><AppIcon name="history" /></span>
         <span class="row-body">
           <span class="row-title">长期记忆</span>
         </span>
-        <span class="row-action">管理</span>
+        <span class="row-action">管理<AppIcon name="chevron-right" /></span>
       </RouterLink>
       <details class="privacy-box" :open="privacy.enabled">
         <summary>
-          高级设置 <span>{{ privacy.enabled ? '已启用' : '可选' }}</span>
+          <span class="summary-main"><AppIcon name="lock" />高级设置</span>
+          <span class="summary-state">{{ privacy.enabled ? '已启用' : '可选' }}</span>
+          <AppIcon name="chevron" class="fold-chevron" />
         </summary>
         <div class="privacy-box-head">
           <div>
@@ -289,50 +305,75 @@ async function disablePin(): Promise<void> {
 }
 
 .head {
-  display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  padding: var(--sp-5) var(--sp-5) var(--sp-3);
-}
-
-.title {
-  margin: 0;
-  font-size: var(--fs-xl);
-  font-weight: 700;
-}
-
-.subtitle {
-  margin: 6px 0 0;
-  font-size: var(--fs-sm);
-  color: var(--text-2);
 }
 
 .saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
   font-size: var(--fs-xs);
+  font-weight: 600;
   color: var(--success);
+  background: var(--success-soft);
 }
 
+/* 每组设置一张卡片 */
 .section {
-  padding: 0 var(--sp-5);
-  margin-bottom: var(--sp-5);
+  margin: 0 20px 16px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface-1);
+  box-shadow: var(--card-shadow);
 }
 
 .section-title {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
-  margin: 0 0 var(--sp-3);
-  font-size: var(--fs-sm);
+  gap: 10px;
+  margin: 0 0 16px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.title-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  font-size: 1rem;
+  box-shadow: var(--shadow-brand);
+}
+
+.conn-state {
+  margin-left: auto;
+  padding: 3px 9px;
+  border-radius: var(--r-full);
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--text-2);
-  letter-spacing: 0.06em;
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.conn-state.ready {
+  color: var(--success);
+  background: var(--success-soft);
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-2);
-  margin-bottom: var(--sp-3);
+  margin-bottom: var(--sp-4);
 }
 
 .chip {
@@ -340,36 +381,42 @@ async function disablePin(): Promise<void> {
   border-radius: var(--r-full);
   font-size: var(--fs-xs);
   color: var(--text-2);
-  background: var(--surface-1);
+  background: var(--surface-2);
   border: 1px solid var(--border);
-  transition: all var(--dur) var(--ease);
+  transition:
+    color var(--dur) var(--ease),
+    background var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 
 .chip.on {
   color: var(--brand-on);
-  background: var(--brand-action);
+  font-weight: 700;
+  background: var(--grad-brand);
   border-color: transparent;
+  box-shadow: var(--shadow-brand);
 }
 
 .hint {
   margin: 0 0 var(--sp-3);
   font-size: var(--fs-xs);
   line-height: 1.65;
-  color: var(--text-3);
+  color: var(--text-2);
 }
 
 .docs-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   margin: 0 0 var(--sp-3);
-  color: var(--brand-action);
+  color: var(--brand);
   font-size: var(--fs-xs);
+  font-weight: 600;
   text-decoration: none;
 }
 
 .docs-link:focus-visible {
-  outline: 2px solid var(--brand-action);
+  outline: 2px solid var(--brand);
   outline-offset: 3px;
   border-radius: 3px;
 }
@@ -383,22 +430,27 @@ async function disablePin(): Promise<void> {
   display: block;
   margin-bottom: 6px;
   font-size: var(--fs-xs);
+  font-weight: 600;
   color: var(--text-2);
 }
 
 .input {
   width: 100%;
+  min-width: 0;
   padding: 11px 13px;
   border-radius: var(--r-sm);
-  background: var(--surface-1);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   font-size: var(--fs-sm);
   outline: none;
-  transition: border-color var(--dur) var(--ease);
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 
 .input:focus {
   border-color: var(--brand);
+  box-shadow: var(--focus-ring);
 }
 
 .field-with-btn {
@@ -409,9 +461,10 @@ async function disablePin(): Promise<void> {
 
 .ghost-btn {
   flex: none;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border-radius: var(--r-sm);
   font-size: var(--fs-xs);
+  font-weight: 600;
   color: var(--text-2);
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -419,13 +472,20 @@ async function disablePin(): Promise<void> {
 
 .primary-btn {
   width: 100%;
-  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 13px;
   border-radius: var(--r-md);
   font-size: var(--fs-sm);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--brand-on);
-  background: var(--brand-action);
-  transition: transform var(--dur-fast) var(--ease);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
+  transition:
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur) var(--ease);
 }
 
 .primary-btn:active {
@@ -433,7 +493,8 @@ async function disablePin(): Promise<void> {
 }
 
 .primary-btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
+  box-shadow: none;
 }
 
 .result {
@@ -449,41 +510,214 @@ async function disablePin(): Promise<void> {
 
 .result.ok {
   color: var(--success);
-  background: rgba(79, 209, 165, 0.1);
-  border: 1px solid rgba(79, 209, 165, 0.26);
+  background: var(--success-soft);
+  border: 1px solid var(--success-line);
 }
 
 .result.bad {
   color: var(--danger);
-  background: rgba(255, 107, 129, 0.1);
-  border: 1px solid rgba(255, 107, 129, 0.26);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-line);
 }
 
+/* 折叠项：接口地址与模型 / 高级设置 */
+.advanced-config,
+.privacy-box {
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.advanced-config {
+  margin: 0 0 14px;
+  padding: 0 12px;
+}
+
+.advanced-config[open] {
+  padding-bottom: 2px;
+}
+
+.advanced-config summary,
+.privacy-box summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  list-style: none;
+  font-size: var(--fs-xs);
+  color: var(--text-1);
+  cursor: pointer;
+}
+
+.advanced-config summary::-webkit-details-marker,
+.privacy-box summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.summary-main .icon {
+  color: var(--brand);
+}
+
+.summary-state {
+  margin-left: auto;
+  max-width: 50%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-3);
+  font-size: 0.6875rem;
+}
+
+.fold-chevron {
+  flex: none;
+  color: var(--text-3);
+  transition: transform var(--dur) var(--ease);
+}
+
+details[open] > summary .fold-chevron {
+  transform: rotate(180deg);
+}
+
+.advanced-config .input,
+.privacy-box .input {
+  background: var(--surface-1);
+}
+
+/* ---- 外观：迷你界面预览 ---- */
+.style-choice {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.style-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 8px 10px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.style-option:active {
+  transform: scale(0.96);
+}
+
+.style-option.selected {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
+}
+
+.style-option strong {
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.style-option.selected strong {
+  color: var(--brand);
+}
+
+.style-swatch {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--sw-bg);
+  border: 1px solid color-mix(in srgb, var(--text-1) 12%, transparent);
+}
+
+.style-swatch i {
+  position: absolute;
+  border-radius: 3px;
+  background: var(--sw-accent);
+}
+
+.style-swatch i:nth-child(1) {
+  left: 8px;
+  top: 8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 6px;
+}
+
+.style-swatch i:nth-child(2) {
+  left: 30px;
+  top: 10px;
+  width: 42%;
+  height: 4px;
+  opacity: 0.6;
+}
+
+.style-swatch i:nth-child(3) {
+  left: 8px;
+  right: 8px;
+  bottom: 7px;
+  height: 9px;
+  border-radius: 5px;
+  opacity: 0.85;
+}
+
+.style-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  font-size: 0.6875rem;
+}
+
+/* ---- 我的管理 ---- */
 .row-btn {
   width: 100%;
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
+  padding: 12px;
   border-radius: var(--r-md);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  text-align: left;
-  margin-bottom: var(--sp-2);
-}
-
-.row-btn.static {
-  margin-bottom: var(--sp-3);
-}
-
-.row-btn:not(.static):active {
   background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.row-btn:active {
+  background: var(--surface-3);
 }
 
 .row-icon {
+  display: grid;
+  place-items: center;
   flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
   font-size: 1.0625rem;
   color: var(--brand);
+  background: var(--brand-soft);
 }
 
 .row-body {
@@ -494,53 +728,31 @@ async function disablePin(): Promise<void> {
 }
 
 .row-title {
+  margin: 0;
   font-size: var(--fs-sm);
   font-weight: 600;
 }
 
-.row-desc {
-  font-size: var(--fs-xs);
-  color: var(--text-2);
-  margin-top: 2px;
-}
-
 .row-action {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   font-size: var(--fs-xs);
   color: var(--text-3);
 }
 
-.outline-btn,
-.danger-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  padding: 12px;
-  border-radius: var(--r-md);
-  font-size: var(--fs-sm);
-}
-
-.outline-btn {
-  margin-bottom: var(--sp-2);
-  color: var(--brand);
-  background: var(--brand-soft);
-  border: 1px solid var(--border);
-}
-
-.danger-btn {
-  color: var(--danger);
-  background: rgba(255, 107, 129, 0.08);
-  border: 1px solid rgba(255, 107, 129, 0.24);
-}
-
 .privacy-box {
-  margin-bottom: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
-  border-radius: var(--r-md);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
+  margin: 12px 0 0;
+  padding: 0 12px;
+}
+
+.privacy-box[open] {
+  padding-bottom: 12px;
+}
+
+.privacy-box[open] summary {
+  margin-bottom: 4px;
 }
 
 .privacy-box-head {
@@ -552,11 +764,11 @@ async function disablePin(): Promise<void> {
 }
 
 .lock-status {
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: var(--r-full);
   color: var(--text-3);
-  background: var(--surface-2);
-  font-size: 0.625rem;
+  background: var(--surface-1);
+  font-size: 0.6875rem;
 }
 
 /* 只有真正启用时才显示为绿色。
@@ -564,7 +776,7 @@ async function disablePin(): Promise<void> {
    结果「未启用」也是绿的 —— 状态色反而误导用户。 */
 .lock-status.on {
   color: var(--success);
-  background: rgba(79, 209, 165, 0.14);
+  background: var(--success-soft);
 }
 
 .pin-input {
@@ -580,19 +792,21 @@ async function disablePin(): Promise<void> {
 .primary-small,
 .ghost-small {
   flex: 1;
-  padding: 9px 8px;
+  padding: 10px 8px;
   border-radius: var(--r-sm);
   font-size: var(--fs-xs);
+  font-weight: 600;
 }
 
 .primary-small {
   color: var(--brand-on);
-  background: var(--brand-action);
+  background: var(--grad-brand);
 }
 
 .ghost-small {
   color: var(--text-2);
-  background: var(--surface-2);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
 }
 
 .primary-small:disabled,
@@ -606,67 +820,8 @@ async function disablePin(): Promise<void> {
   color: var(--danger);
 }
 
-.data-note {
-  margin: var(--sp-3) 0 0;
-  font-size: var(--fs-xs);
-  line-height: 1.7;
-  color: var(--text-3);
-}
-
 .tail {
   height: var(--sp-6);
-}
-
-.style-choice {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.style-option {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 9px;
-  min-width: 0;
-  padding: 14px;
-  text-align: left;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-}
-
-.style-option.selected {
-  border-color: var(--brand);
-  box-shadow: 0 0 0 2px var(--brand-soft);
-}
-
-.style-option strong,
-.style-option small {
-  display: block;
-}
-
-.style-option strong {
-  font-size: var(--fs-sm);
-}
-.style-option small {
-  margin-top: 3px;
-  font-size: var(--fs-xs);
-  color: var(--text-2);
-  line-height: 1.4;
-}
-.style-swatch {
-  width: 42px;
-  height: 25px;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-}
-.warm-swatch {
-  background: linear-gradient(90deg, #081326 64%, #65e3df 64%);
-}
-.pro-swatch {
-  background: linear-gradient(90deg, #f5f6fb 64%, #5264d9 64%);
 }
 
 .fade-enter-active,
@@ -679,151 +834,11 @@ async function disablePin(): Promise<void> {
   opacity: 0;
 }
 
-.settings-page .head {
-  padding-bottom: 20px;
-}
-.eyebrow {
-  margin: 8px 0 0;
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  color: var(--brand-action);
-}
-.profile-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 0 20px 20px;
-  padding: 18px;
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  background: linear-gradient(135deg, var(--brand-soft), var(--surface-1));
-}
-.profile-icon {
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  flex: none;
-  border-radius: 16px;
-  background: var(--brand-soft);
-  color: var(--brand-action);
-  font-size: 24px;
-}
-.profile-card strong {
-  font-size: 16px;
-}
-.profile-card p {
-  margin: 5px 0 0;
-  font-size: 11px;
-  color: var(--text-2);
-}
-.config-state {
-  margin-left: auto;
-  flex: none;
-  font-size: 10px;
-  padding: 5px 8px;
-  border-radius: 20px;
-  color: var(--text-2);
-  background: var(--surface-2);
-}
-.config-state.ready {
-  color: var(--success);
-}
-.settings-page .section {
-  margin: 0 20px 16px;
-  padding: 18px;
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  background: var(--surface-1);
-}
-.settings-page .section-title {
-  color: var(--text-1);
-  font-size: 15px;
-  letter-spacing: 0;
-}
-.settings-page .input {
-  background: var(--surface-2);
-  min-width: 0;
-}
-.advanced-config {
-  margin: 0 0 16px;
-  padding: 12px;
-  background: var(--surface-2);
-  border-radius: 14px;
-}
-.advanced-config summary,
-.privacy-box summary {
-  min-height: 24px;
-  font-size: 12px;
-  color: var(--text-2);
-  cursor: pointer;
-}
-.advanced-config summary span,
-.privacy-box summary span {
-  float: right;
-  max-width: 50%;
-  overflow-wrap: anywhere;
-  color: var(--text-3);
-  font-size: 11px;
-}
-.advanced-config[open] summary,
-.privacy-box[open] summary {
-  margin-bottom: 16px;
-}
-.privacy-box {
-  margin: 12px 0 0;
-}
-.settings-page .hint {
-  color: var(--text-2);
-}
-.settings-page .style-option {
-  padding: 12px;
-  background: var(--surface-2);
-}
 @media (max-width: 350px) {
-  .settings-page .section,
-  .profile-card {
+  .section {
     margin-left: 14px;
     margin-right: 14px;
     padding: 14px;
   }
-  .profile-card {
-    gap: 8px;
-  }
-}
-
-.settings-page .head {
-  padding-bottom: 16px;
-}
-.settings-page .style-choice {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0;
-}
-.settings-page .style-option {
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 4px;
-  min-height: 68px;
-  border-radius: 12px;
-  text-align: center;
-}
-.settings-page .style-option strong {
-  font-size: 11px;
-  white-space: nowrap;
-}
-.settings-page .style-swatch {
-  width: 30px;
-  height: 16px;
-  border-radius: 5px;
-}
-.settings-page .row-btn {
-  padding: 12px;
-  margin-bottom: 0;
-}
-.settings-page .privacy-box {
-  padding: 12px;
-  border-radius: 14px;
 }
 </style>

@@ -126,6 +126,61 @@ defineProps<{ name: IconName }>()
     <template v-else-if="name === 'chevron'">
       <path d="M6 9l6 6 6-6" />
     </template>
+
+    <template v-else-if="name === 'chevron-right'">
+      <path d="M9 6l6 6-6 6" />
+    </template>
+
+    <template v-else-if="name === 'back'">
+      <path d="M15 5l-7 7 7 7" />
+    </template>
+
+    <template v-else-if="name === 'arrow-up-right'">
+      <path d="M7 17L17 7M8.5 7H17v8.5" />
+    </template>
+
+    <template v-else-if="name === 'help'">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.4 9.3a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.3-2.6 4M12 17.2h.01" />
+    </template>
+
+    <template v-else-if="name === 'lock'">
+      <rect x="4.5" y="10.5" width="15" height="10.5" rx="2.6" />
+      <path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9M12 14.6v2.2" />
+    </template>
+
+    <template v-else-if="name === 'key'">
+      <circle cx="7.8" cy="15.8" r="4.2" />
+      <path d="M10.8 12.8L20 3.6M16.4 7.2l2.6 2.6M13.9 9.7l2 2" />
+    </template>
+
+    <template v-else-if="name === 'palette'">
+      <path
+        d="M12 3a9 9 0 0 0 0 18c1.1 0 1.8-.8 1.8-1.8 0-.5-.2-.9-.5-1.2a1.7 1.7 0 0 1 1.3-3H16a5 5 0 0 0 5-5C21 6.1 17 3 12 3z"
+      />
+      <circle cx="7.6" cy="11.6" r="1.1" />
+      <circle cx="10.6" cy="7.6" r="1.1" />
+      <circle cx="15.2" cy="8.2" r="1.1" />
+    </template>
+
+    <template v-else-if="name === 'shield'">
+      <path d="M12 3l7.5 3v5.4c0 4.6-3.2 8.5-7.5 9.6-4.3-1.1-7.5-5-7.5-9.6V6L12 3z" />
+      <path d="M9 12l2.2 2.2L15.5 10" />
+    </template>
+
+    <template v-else-if="name === 'bolt'">
+      <path d="M13 2.5L4.5 13.5H12l-1 8 8.5-11H12l1-8z" />
+    </template>
+
+    <template v-else-if="name === 'swap'">
+      <path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5" />
+    </template>
+
+    <template v-else-if="name === 'trend'">
+      <path d="M3.5 4v16h17" />
+      <path d="M7.5 14.5l3.6-3.8 3 2.8 5.4-6" />
+      <path d="M15.6 7.5h3.9v3.9" />
+    </template>
   </svg>
 </template>
 

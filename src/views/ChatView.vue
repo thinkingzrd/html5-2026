@@ -400,7 +400,7 @@ async function commitRename(): Promise<void> {
 </script>
 
 <template>
-  <div class="page">
+  <div class="page" :style="{ '--accent': chat.currentPersona.accent }">
     <!-- 顶栏 -->
     <header class="header safe-x">
       <div class="header-left">
@@ -410,7 +410,7 @@ async function commitRename(): Promise<void> {
         </button>
         <div class="header-text">
           <p class="header-title">{{ headerTitle }}</p>
-          <p class="header-sub">{{ chat.currentPersona.name }}</p>
+          <p class="header-sub"><i class="online-dot" aria-hidden="true" />{{ chat.currentPersona.name }}</p>
         </div>
       </div>
 
@@ -443,18 +443,20 @@ async function commitRename(): Promise<void> {
       <template v-else>
         <!-- 欢迎屏：跟着角色变，开口有抓手 -->
         <div v-if="chat.messages.length === 0" class="welcome">
-          <div class="welcome-avatar" aria-hidden="true">{{ chat.currentPersona.name.slice(0, 1) }}</div>
+          <div class="welcome-avatar" aria-hidden="true">
+            <span>{{ chat.currentPersona.name.slice(0, 1) }}</span>
+          </div>
           <p class="welcome-name">{{ chat.currentPersona.name }}</p>
           <p class="welcome-line">{{ chat.currentPersona.greeting }}</p>
 
           <div class="chips">
             <button v-for="item in suggestions" :key="item" class="chip" @click="fillSuggestion(item)">
-              {{ item }}
+              <AppIcon name="sparkle" class="chip-icon" />{{ item }}
             </button>
           </div>
 
           <button class="welcome-switch" @click="openPersonaPicker">
-            <AppIcon name="sparkle" />
+            <AppIcon name="swap" />
             换一位角色
           </button>
         </div>
@@ -490,7 +492,9 @@ async function commitRename(): Promise<void> {
     <div v-if="chat.errorText" class="error safe-x" role="alert">
       <AppIcon name="alert" class="error-icon" />
       <p class="error-text">{{ chat.errorText }}</p>
-      <button v-if="canRetry || retrying" class="error-retry" :disabled="!canRetry" @click="handleRetry">{{ retrying ? '重试中' : '重新生成' }}</button>
+      <button v-if="canRetry || retrying" class="error-retry" :disabled="!canRetry" @click="handleRetry">
+        {{ retrying ? '重试中' : '重新生成' }}
+      </button>
       <button class="error-close" aria-label="关闭提示" @click="chat.clearError()">
         <AppIcon name="close" />
       </button>
@@ -498,13 +502,23 @@ async function commitRename(): Promise<void> {
 
     <!-- 输入区 -->
     <footer class="composer safe-x">
-      <div v-if="chat.streaming || retrying || (canRetry && !chat.errorText)" class="generation-state" role="status" aria-live="polite">
-        <span>{{ chat.streaming ? generationLabel : retrying ? '正在重试' : '回复未完成' }}</span>
+      <div
+        v-if="chat.streaming || retrying || (canRetry && !chat.errorText)"
+        class="generation-state"
+        role="status"
+        aria-live="polite"
+      >
+        <span class="generation-label"
+          ><i v-if="chat.streaming || retrying" class="pulse" aria-hidden="true" />{{
+            chat.streaming ? generationLabel : retrying ? '正在重试' : '回复未完成'
+          }}</span
+        >
         <button v-if="canRetry && !chat.errorText" @click="handleRetry">重新生成</button>
       </div>
       <button
         v-if="rag.documents.length || chat.selectedDocumentId"
         class="scope-toggle"
+        :class="{ active: chat.selectedDocumentId }"
         :aria-expanded="showDocumentScope"
         @click="showDocumentScope = !showDocumentScope"
       >
@@ -518,7 +532,11 @@ async function commitRename(): Promise<void> {
       </button>
       <label v-if="showDocumentScope" class="document-scope">
         问答资料
-        <select v-model="chat.selectedDocumentId" :disabled="chat.streaming || retrying || chat.loadingSession || !rag.ready" aria-label="问答资料范围">
+        <select
+          v-model="chat.selectedDocumentId"
+          :disabled="chat.streaming || retrying || chat.loadingSession || !rag.ready"
+          aria-label="问答资料范围"
+        >
           <option value="">全部资料</option>
           <option v-for="doc in rag.documents" :key="doc.id" :value="doc.id">仅：{{ doc.title }}</option>
           <option
@@ -530,7 +548,9 @@ async function commitRename(): Promise<void> {
         </select>
       </label>
       <RouterLink v-if="!settings.chatConfigured" to="/me" class="composer-warn">
-        尚未配置 API Key，点此前往设置
+        <AppIcon name="key" />
+        <span>尚未配置 API Key，点此前往设置</span>
+        <AppIcon name="chevron-right" />
       </RouterLink>
 
       <div v-else class="composer-row">
@@ -557,6 +577,7 @@ async function commitRename(): Promise<void> {
     <Transition name="sheet">
       <div v-if="showSessions" class="sheet-mask" @click.self="closeSessions">
         <div class="sheet">
+          <span class="sheet-grabber" aria-hidden="true" />
           <div class="sheet-head">
             <h2 class="sheet-title">历史会话</h2>
             <button class="icon-btn" aria-label="关闭" @click="closeSessions">
@@ -674,6 +695,7 @@ async function commitRename(): Promise<void> {
 
                   <template v-else>
                     <button class="session-main" @click="pickSession(session.id)">
+                      <span class="session-initial" aria-hidden="true">{{ session.title.slice(0, 1) || '聊' }}</span>
                       <span class="session-title">{{ session.title }}</span>
                       <span class="session-time">
                         {{ new Date(session.updatedAt).toLocaleDateString('zh-CN') }}
@@ -708,7 +730,9 @@ async function commitRename(): Promise<void> {
   height: 100%;
   padding-top: var(--safe-top);
   position: relative;
-  background: var(--bg);
+  /* 角色主色只用来点缀头像，混入主题文字色后在五套主题下都清晰可读 */
+  --accent-ink: color-mix(in srgb, var(--accent) 62%, var(--text-1));
+  --accent-tint: color-mix(in srgb, var(--accent) 20%, var(--surface-1));
 }
 
 /* ---- 顶栏 ---- */
@@ -719,9 +743,11 @@ async function commitRename(): Promise<void> {
   justify-content: space-between;
   gap: var(--sp-3);
   min-height: var(--header-h);
-  padding: 12px var(--sp-4);
+  padding: 10px var(--sp-4);
   border-bottom: 1px solid var(--border);
-  background: var(--surface-1);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
   z-index: 5;
 }
 
@@ -733,17 +759,18 @@ async function commitRename(): Promise<void> {
 }
 
 .avatar {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   flex: none;
-  border-radius: var(--r-sm);
+  border-radius: 13px;
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-size: 1.0625rem;
   font-weight: 700;
-  color: var(--brand);
-  background: var(--brand-soft);
-  border: 1px solid var(--border);
+  font-family: Georgia, 'Songti SC', serif;
+  color: var(--accent-ink);
+  background: var(--accent-tint);
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
   transition:
     transform var(--dur-fast) var(--ease),
     border-color var(--dur) var(--ease);
@@ -751,7 +778,6 @@ async function commitRename(): Promise<void> {
 
 .avatar:active {
   transform: scale(0.9);
-  border-color: var(--brand);
 }
 
 .icon-btn:disabled {
@@ -765,7 +791,7 @@ async function commitRename(): Promise<void> {
 .header-title {
   margin: 0;
   font-size: var(--fs-sm);
-  font-weight: 620;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -773,24 +799,35 @@ async function commitRename(): Promise<void> {
 }
 
 .header-sub {
-  margin: 0;
-  font-size: 0.625rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 1px 0 0;
+  font-size: 0.6875rem;
   color: var(--text-3);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
+}
+
+.online-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 2px var(--success-soft);
 }
 
 .header-actions {
   display: flex;
-  gap: 2px;
+  gap: 4px;
   flex: none;
 }
 
 .icon-btn {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
-  border-radius: var(--r-full);
+  border-radius: 12px;
   color: var(--text-2);
   font-size: 1.1875rem;
   transition: background var(--dur-fast) var(--ease);
@@ -815,21 +852,41 @@ async function commitRename(): Promise<void> {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: var(--sp-6) var(--sp-4);
+  padding: 36px var(--sp-2) var(--sp-5);
 }
 
 .welcome-avatar {
-  width: 68px;
-  height: 68px;
-  border-radius: var(--r-lg);
+  position: relative;
   display: grid;
   place-items: center;
-  font-size: 1.8rem;
+  width: 84px;
+  height: 84px;
+  animation: welcome-in var(--dur-slow) var(--ease-spring);
+}
+
+/* 头像外圈一道柔光，突出「此刻在和谁说话」 */
+.welcome-avatar::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 34px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 34%, transparent), transparent 70%);
+}
+
+.welcome-avatar span {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 28px;
+  font-size: 2.1rem;
   font-weight: 700;
-  color: var(--brand);
-  background: var(--brand-soft);
-  border: 1px solid var(--border);
-  animation: welcome-in var(--dur-slow) var(--ease);
+  font-family: Georgia, 'Songti SC', serif;
+  color: var(--accent-ink);
+  background: var(--accent-tint);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: var(--tech-shadow);
 }
 
 @keyframes welcome-in {
@@ -844,9 +901,9 @@ async function commitRename(): Promise<void> {
 }
 
 .welcome-name {
-  margin: var(--sp-3) 0 0;
+  margin: var(--sp-4) 0 0;
   font-size: var(--fs-lg);
-  font-weight: 680;
+  font-weight: 750;
 }
 
 .welcome-line {
@@ -865,9 +922,10 @@ async function commitRename(): Promise<void> {
   padding: 9px 16px;
   border-radius: var(--r-full);
   font-size: var(--fs-xs);
+  font-weight: 600;
   color: var(--brand);
   background: var(--brand-soft);
-  border: 1px solid transparent;
+  border: 1px solid var(--brand-line);
   transition: transform var(--dur-fast) var(--ease);
 }
 
@@ -877,11 +935,16 @@ async function commitRename(): Promise<void> {
 
 /* ---- 上滑加载更早的消息 ---- */
 .load-hint {
-  margin: 0 0 var(--sp-4);
+  margin: 0 auto var(--sp-4);
+  width: fit-content;
+  padding: 4px 12px;
+  border-radius: var(--r-full);
   text-align: center;
   font-size: 0.6875rem;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--text-3);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
 }
 
 .loading-older {
@@ -893,44 +956,59 @@ async function commitRename(): Promise<void> {
 
 .chips {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--sp-2);
-  margin-top: var(--sp-4);
+  width: 100%;
+  max-width: 340px;
+  margin-top: var(--sp-5);
 }
 
 .chip {
-  padding: 8px 13px;
-  border-radius: var(--r-full);
-  font-size: var(--fs-xs);
-  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: var(--r-md);
+  text-align: left;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--text-1);
   background: var(--surface-1);
   border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
   transition:
     transform var(--dur-fast) var(--ease),
-    background var(--dur) var(--ease);
+    border-color var(--dur) var(--ease);
+}
+
+.chip-icon {
+  flex: none;
+  color: var(--brand);
+  font-size: 0.9rem;
 }
 
 .chip:active {
-  transform: scale(0.96);
-  background: var(--surface-2);
+  transform: scale(0.98);
+  border-color: var(--brand-line);
 }
 
 .to-bottom {
   position: absolute;
   right: var(--sp-4);
-  bottom: 108px;
+  bottom: 112px;
   width: 40px;
   height: 40px;
   display: grid;
   place-items: center;
   border-radius: var(--r-full);
-  color: var(--text-1);
+  color: var(--brand);
   font-size: 1.125rem;
-  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-md);
   transform: rotate(180deg);
   z-index: 6;
 }
@@ -939,19 +1017,19 @@ async function commitRename(): Promise<void> {
 .error {
   flex: none;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--sp-2);
   margin: 0 var(--sp-4) var(--sp-2);
-  padding: 10px 12px;
+  padding: 10px 10px 10px 12px;
   border-radius: var(--r-md);
-  background: rgba(255, 107, 129, 0.1);
-  border: 1px solid rgba(255, 107, 129, 0.3);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-line);
 }
 
 .error-icon {
+  flex: none;
   font-size: 1rem;
   color: var(--danger);
-  margin-top: 2px;
 }
 
 .error-text {
@@ -963,18 +1041,19 @@ async function commitRename(): Promise<void> {
 }
 
 .error-close {
+  flex: none;
   color: var(--text-3);
   font-size: 0.9375rem;
-  padding: 2px;
+  padding: 4px;
 }
 .error-retry {
   flex: none;
-  padding: 6px 11px;
+  padding: 6px 12px;
   border-radius: var(--r-full);
   color: var(--bg);
   background: var(--danger);
   font-size: var(--fs-xs);
-  font-weight: 650;
+  font-weight: 700;
 }
 .error-retry:disabled {
   opacity: 0.45;
@@ -985,21 +1064,42 @@ async function commitRename(): Promise<void> {
   flex: none;
   padding: 8px var(--sp-4) var(--sp-3);
   border-top: 1px solid var(--border);
-  background: var(--surface-1);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
 }
 .generation-state {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  min-height: 28px;
-  margin-bottom: 5px;
+  min-height: 30px;
+  margin-bottom: 6px;
   color: var(--text-2);
   font-size: var(--fs-xs);
 }
+.generation-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  animation: pulse 1.1s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+    transform: scale(0.75);
+  }
+}
 .generation-state button {
   color: var(--brand);
-  padding: 7px 10px;
+  font-weight: 600;
+  padding: 6px 12px;
   border-radius: var(--r-full);
   background: var(--brand-soft);
 }
@@ -1014,47 +1114,62 @@ async function commitRename(): Promise<void> {
 .document-scope select {
   min-width: 0;
   flex: 1;
-  padding: 8px;
+  padding: 9px 10px;
   color: var(--text-1);
-  background: var(--surface-1);
+  background-color: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
 }
 
 .composer-warn {
-  display: block;
-  text-align: center;
-  padding: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
   border-radius: var(--r-md);
   font-size: var(--fs-sm);
+  color: var(--text-1);
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-line);
+}
+
+.composer-warn span {
+  flex: 1;
+}
+
+.composer-warn .icon:first-child {
   color: var(--warning);
-  background: rgba(255, 196, 107, 0.1);
-  border: 1px solid rgba(255, 196, 107, 0.26);
 }
 
 .composer-row {
   display: flex;
   align-items: flex-end;
   gap: var(--sp-2);
+  padding: 5px 5px 5px 6px;
+  border-radius: 24px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.composer-row:focus-within {
+  border-color: var(--brand);
+  box-shadow: var(--focus-ring);
 }
 
 .input {
   flex: 1;
-  min-height: 42px;
+  min-height: 40px;
   max-height: 120px;
-  padding: 10px 14px;
-  border-radius: var(--r-lg);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
+  padding: 9px 10px;
+  border: none;
+  background: transparent;
   font-size: var(--fs-md);
   line-height: 1.5;
   resize: none;
   outline: none;
-  transition: border-color var(--dur) var(--ease);
-}
-
-.input:focus {
-  border-color: var(--brand);
 }
 
 .input::placeholder {
@@ -1063,30 +1178,34 @@ async function commitRename(): Promise<void> {
 
 .send-btn {
   flex: none;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   border-radius: var(--r-full);
   font-size: 1.1875rem;
-  color: var(--bg);
-  background: var(--brand);
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
   transition:
     transform var(--dur-fast) var(--ease),
     opacity var(--dur) var(--ease);
 }
 
 .send-btn:active {
-  transform: scale(0.92);
+  transform: scale(0.9);
 }
 
 .send-btn:disabled {
-  opacity: 0.35;
+  color: var(--text-3);
+  background: var(--surface-3);
+  box-shadow: none;
 }
 
 .send-btn.stop {
-  background: var(--surface-3);
   color: var(--text-1);
+  background: var(--surface-3);
+  box-shadow: none;
 }
 
 /* ---- 从搜索结果跳过来时闪一下 ----
@@ -1109,7 +1228,9 @@ async function commitRename(): Promise<void> {
 .sheet-mask {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(3, 8, 20, 0.55);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: flex-end;
   z-index: 20;
@@ -1117,27 +1238,37 @@ async function commitRename(): Promise<void> {
 
 .sheet {
   width: 100%;
-  max-height: 74%;
+  max-height: 76%;
   display: flex;
   flex-direction: column;
   padding: 0 var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
-  border-radius: var(--r-lg) var(--r-lg) 0 0;
-  background: var(--bg-elev, #10121d);
-  background: color-mix(in srgb, var(--bg) 92%, white 8%);
+  border-radius: 28px 28px 0 0;
+  background: var(--surface-1);
   border-top: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+}
+
+.sheet-grabber {
+  align-self: center;
+  flex: none;
+  width: 38px;
+  height: 4px;
+  margin-top: 8px;
+  border-radius: var(--r-full);
+  background: var(--border-strong);
 }
 
 .sheet-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--sp-4) 0 var(--sp-2);
+  padding: var(--sp-2) 0 var(--sp-2);
 }
 
 .sheet-title {
   margin: 0;
   font-size: var(--fs-md);
-  font-weight: 620;
+  font-weight: 750;
 }
 
 /* ---- 跨会话搜索 ---- */
@@ -1148,15 +1279,18 @@ async function commitRename(): Promise<void> {
   gap: var(--sp-2);
   margin-bottom: var(--sp-2);
   padding: 0 var(--sp-3);
-  min-height: 40px;
+  min-height: 42px;
   border-radius: var(--r-md);
-  background: var(--surface-1);
+  background: var(--surface-2);
   border: 1px solid var(--border);
-  transition: border-color var(--dur) var(--ease);
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 
 .search-bar:focus-within {
   border-color: var(--brand);
+  box-shadow: var(--focus-ring);
 }
 
 .search-bar-icon {
@@ -1258,7 +1392,7 @@ async function commitRename(): Promise<void> {
 
 .search-hit {
   font-style: normal;
-  font-weight: 620;
+  font-weight: 650;
   color: var(--brand);
   background: var(--brand-soft);
   border-radius: 4px;
@@ -1334,13 +1468,16 @@ async function commitRename(): Promise<void> {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 4px var(--sp-2) 4px 0;
+  margin-bottom: 4px;
+  padding: 3px var(--sp-2) 3px 0;
   border-radius: var(--r-md);
+  border: 1px solid transparent;
   transition: background var(--dur-fast) var(--ease);
 }
 
 .session.active {
   background: var(--brand-soft);
+  border-color: var(--brand-line);
 }
 
 .session-main {
@@ -1349,7 +1486,7 @@ async function commitRename(): Promise<void> {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: 12px var(--sp-3);
+  padding: 9px var(--sp-3);
   text-align: left;
   border-radius: var(--r-md);
 }
@@ -1358,10 +1495,29 @@ async function commitRename(): Promise<void> {
   background: var(--surface-2);
 }
 
+.session-initial {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--surface-2);
+}
+
+.session.active .session-initial {
+  color: var(--brand-on);
+  background: var(--grad-brand);
+}
+
 .session-title {
   flex: 1;
   min-width: 0;
   font-size: var(--fs-sm);
+  font-weight: 550;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1369,7 +1525,7 @@ async function commitRename(): Promise<void> {
 
 .session-time {
   flex: none;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   color: var(--text-3);
 }
 
@@ -1390,7 +1546,7 @@ async function commitRename(): Promise<void> {
 
 .session-act.danger:active {
   color: var(--danger);
-  background: rgba(255, 107, 129, 0.12);
+  background: var(--danger-soft);
 }
 
 /* 原位重命名：直接变成输入框，不弹二次对话框 */
@@ -1402,6 +1558,7 @@ async function commitRename(): Promise<void> {
   border-radius: var(--r-sm);
   background: var(--surface-1);
   border: 1px solid var(--brand);
+  box-shadow: var(--focus-ring);
   font-size: var(--fs-sm);
   outline: none;
 }
@@ -1413,12 +1570,13 @@ async function commitRename(): Promise<void> {
   justify-content: center;
   gap: var(--sp-2);
   margin-top: var(--sp-3);
-  padding: 12px;
+  padding: 13px;
   border-radius: var(--r-md);
   font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--brand);
-  background: var(--brand-soft);
+  font-weight: 700;
+  color: var(--brand-on);
+  background: var(--grad-brand);
+  box-shadow: var(--shadow-brand);
 }
 
 /* ---- 过渡 ---- */
@@ -1453,19 +1611,31 @@ async function commitRename(): Promise<void> {
 }
 
 .scope-toggle {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   max-width: 100%;
-  min-height: 32px;
+  min-height: 30px;
   margin-bottom: 6px;
-  color: var(--text-3);
+  padding: 0 10px;
+  border-radius: var(--r-full);
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   font-size: var(--fs-xs);
+}
+.scope-toggle.active {
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-color: var(--brand-line);
 }
 .scope-toggle span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.scope-toggle .icon:last-child {
+  transition: transform var(--dur) var(--ease);
 }
 .scope-toggle .expanded {
   transform: rotate(180deg);
